@@ -889,7 +889,7 @@ export class BlockParser {
     // For each containing block, try to parse the associated line start.
     // Bail out on failure: container will point to the last matching block.
     // Set all_matched to false if not all containers match.
-    let lastChild;
+    let lastChild: Node | undefined;
     while ((lastChild = container._lastChild) && lastChild._open) {
       container = lastChild;
 
@@ -916,7 +916,7 @@ export class BlockParser {
     this.lastMatchedContainer = container;
 
     let matchedLeaf =
-      container.type !== 'paragraph' && blocks[container.type]?.acceptsLines;
+      container.type !== 'paragraph' && this.blocks[container.type]?.acceptsLines;
     const starts = this.blockStarts;
     const startsLen = starts.length;
     // Unless last matched container is a code block, try new container starts,
