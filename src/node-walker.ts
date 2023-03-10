@@ -1,24 +1,15 @@
-import { Node, NodeType } from 'commonmark';
+import { isContainer, Node, NodeType } from './node';
 
-export const isContainer = (node: Node) => {
-  switch (node.type) {
-  case 'document':
-  case 'block_quote':
-  case 'list':
-  case 'item':
-  case 'paragraph':
-  case 'heading':
-  case 'emph':
-  case 'strong':
-  case 'link':
-  case 'image':
-  case 'custom_inline':
-  case 'custom_block':
-    return true;
-  default:
-    return false;
-  }
-};
+/* Example of use of walker:
+
+ var walker = w.walker();
+ var event;
+
+ while (event = walker.next()) {
+ console.log(event.entering, event.node.type);
+ }
+
+ */
 
 export type NodeWalkerEvent = {
   entering: boolean;
@@ -27,7 +18,7 @@ export type NodeWalkerEvent = {
 
 export class NodeWalker {
 
-  private _current: Node | null;
+  private _current?: Node;
   private _root: Node;
   private _entering: boolean;
 
@@ -46,12 +37,12 @@ export class NodeWalker {
     this._entering = entering;
   }
 
-  next(): NodeWalkerEvent | null {
+  next(): NodeWalkerEvent | undefined {
     const cur = this.current;
     const entering = this.entering;
 
-    if (cur === null) {
-      return null;
+    if (cur === undefined) {
+      return undefined;
     }
 
     const container = isContainer(cur);
@@ -65,7 +56,7 @@ export class NodeWalker {
         this._entering = false;
       }
     } else if (cur === this.root) {
-      this._current = null;
+      this._current = undefined;
     } else if (cur.next === null) {
       this._current = cur.parent;
       this._entering = false;
@@ -80,7 +71,7 @@ export class NodeWalker {
 
 export const walkThrough = (node: Node, callbacks: Record<NodeType, (node: Node, entering: boolean) => void>) => {
   const walker = new NodeWalker(node);
-  let e: NodeWalkerEvent | null = null;
+  let e: NodeWalkerEvent | undefined = undefined;
   while ((e = walker.next())) {
     const { node, entering } = e;
     const cb = callbacks[node.type];

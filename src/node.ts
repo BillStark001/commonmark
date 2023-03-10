@@ -1,296 +1,275 @@
-"use strict";
-
 export type NodeType =
-  'text' |'softbreak' | 'linebreak' | 'emph' | 'strong' | 'html_inline' | 'link' | 'image' | 'code' | 'document' | 'paragraph' |
+  'text' | 'softbreak' | 'linebreak' | 'emph' | 'strong' | 'html_inline' | 'link' | 'image' | 'code' | 'document' | 'paragraph' |
   'block_quote' | 'item' | 'list' | 'heading' | 'code_block' | 'html_block' | 'thematic_break' | 'custom_inline' | 'custom_block';
 
+export type Position = [[number, number], [number, number]];
+
+export interface ListData {
+  type?: string;
+  tight?: boolean;
+  start?: Node;
+  delimiter?: string;
+  bulletChar?: string;
+}
+
+
+export const isContainer = (node: Node) => {
+  switch (node.type) {
+    case 'document':
+    case 'block_quote':
+    case 'list':
+    case 'item':
+    case 'paragraph':
+    case 'heading':
+    case 'emph':
+    case 'strong':
+    case 'link':
+    case 'image':
+    case 'custom_inline':
+    case 'custom_block':
+      return true;
+    default:
+      return false;
+  }
+}
+
+
 export class Node {
-  constructor(nodeType, sourcepos) {
-  this._type = nodeType;
-  this._parent = null;
-  this._firstChild = null;
-  this._lastChild = null;
-  this._prev = null;
-  this._next = null;
-  this._sourcepos = sourcepos;
-  this._lastLineBlank = false;
-  this._lastLineChecked = false;
-  this._open = true;
-  this._string_content = null;
-  this._literal = null;
-  this._listData = {};
-  this._info = null;
-  this._destination = null;
-  this._title = null;
-  this._isFenced = false;
-  this._fenceChar = null;
-  this._fenceLength = 0;
-  this._fenceOffset = null;
-  this._level = null;
-  this._onEnter = null;
-  this._onExit = null;
-}
-}
 
-var Node = function(nodeType, sourcepos) {
-  this._type = nodeType;
-  this._parent = null;
-  this._firstChild = null;
-  this._lastChild = null;
-  this._prev = null;
-  this._next = null;
-  this._sourcepos = sourcepos;
-  this._lastLineBlank = false;
-  this._lastLineChecked = false;
-  this._open = true;
-  this._string_content = null;
-  this._literal = null;
-  this._listData = {};
-  this._info = null;
-  this._destination = null;
-  this._title = null;
-  this._isFenced = false;
-  this._fenceChar = null;
-  this._fenceLength = 0;
-  this._fenceOffset = null;
-  this._level = null;
-  this._onEnter = null;
-  this._onExit = null;
-};
+  _type: NodeType;
+  _parent?: Node;
+  _firstChild?: Node;
+  _lastChild?: Node;
+  _prev?: Node;
+  _next?: Node;
+  _sourcepos?: Position;
+  _lastLineBlank: boolean;
+  _lastLineChecked: boolean;
+  _open: boolean;
+  _string_content?: string;
+  _literal?: string;
+  _listData: ListData;
+  _info?: string;
+  _destination?: string;
+  _title?: string;
+  _isFenced: boolean;
+  _fenceChar?: string;
+  _fenceLength: number;
+  _fenceOffset?: string;
+  _level?: number;
+  _onEnter?: () => void;
+  _onExit?: () => void;
 
-var proto = Node.prototype;
 
-Object.defineProperty(proto, "isContainer", {
-  get: function() {
+  constructor(nodeType: NodeType, sourcepos?: Position) {
+    this._type = nodeType;
+    this._sourcepos = sourcepos;
+    this._lastLineBlank = false;
+    this._lastLineChecked = false;
+    this._open = true;
+    this._listData = {};
+    this._isFenced = false;
+    this._fenceLength = 0;
+  }
+
+  get isContainer() {
     return isContainer(this);
   }
-});
 
-Object.defineProperty(proto, "type", {
-  get: function() {
+
+  get type() {
     return this._type;
   }
-});
 
-Object.defineProperty(proto, "firstChild", {
-  get: function() {
+
+  get firstChild() {
     return this._firstChild;
   }
-});
 
-Object.defineProperty(proto, "lastChild", {
-  get: function() {
+
+  get lastChild() {
     return this._lastChild;
   }
-});
 
-Object.defineProperty(proto, "next", {
-  get: function() {
+
+  get next() {
     return this._next;
   }
-});
 
-Object.defineProperty(proto, "prev", {
-  get: function() {
+
+  get prev() {
     return this._prev;
   }
-});
 
-Object.defineProperty(proto, "parent", {
-  get: function() {
+
+  get parent() {
     return this._parent;
   }
-});
 
-Object.defineProperty(proto, "sourcepos", {
-  get: function() {
+
+  get sourcepos() {
     return this._sourcepos;
   }
-});
 
-Object.defineProperty(proto, "literal", {
-  get: function() {
+
+  get literal() {
     return this._literal;
-  },
-  set: function(s) {
+  }
+  set literal(s) {
     this._literal = s;
   }
-});
 
-Object.defineProperty(proto, "destination", {
-  get: function() {
+
+  get destination() {
     return this._destination;
-  },
-  set: function(s) {
+  }
+  set destination(s) {
     this._destination = s;
   }
-});
 
-Object.defineProperty(proto, "title", {
-  get: function() {
+
+  get title() {
     return this._title;
-  },
-  set: function(s) {
+  }
+  set title(s) {
     this._title = s;
   }
-});
 
-Object.defineProperty(proto, "info", {
-  get: function() {
+
+  get info() {
     return this._info;
-  },
-  set: function(s) {
+  }
+  set info(s) {
     this._info = s;
   }
-});
 
-Object.defineProperty(proto, "level", {
-  get: function() {
+
+  get level() {
     return this._level;
-  },
-  set: function(s) {
+  }
+  set level(s) {
     this._level = s;
   }
-});
 
-Object.defineProperty(proto, "listType", {
-  get: function() {
+
+  get listType() {
     return this._listData.type;
-  },
-  set: function(t) {
+  }
+  set listType(t) {
     this._listData.type = t;
   }
-});
 
-Object.defineProperty(proto, "listTight", {
-  get: function() {
+
+  get listTight() {
     return this._listData.tight;
-  },
-  set: function(t) {
+  }
+  set listTight(t) {
     this._listData.tight = t;
   }
-});
 
-Object.defineProperty(proto, "listStart", {
-  get: function() {
+
+  get listStart() {
     return this._listData.start;
-  },
-  set: function(n) {
+  }
+  set listStart(n: Node | undefined) {
     this._listData.start = n;
   }
-});
 
-Object.defineProperty(proto, "listDelimiter", {
-  get: function() {
+
+  get listDelimiter() {
     return this._listData.delimiter;
-  },
-  set: function(delim) {
+  }
+  set listDelimiter(delim) {
     this._listData.delimiter = delim;
   }
-});
 
-Object.defineProperty(proto, "onEnter", {
-  get: function() {
+
+  get onEnter() {
     return this._onEnter;
-  },
-  set: function(s) {
+  }
+  set onEnter(s) {
     this._onEnter = s;
   }
-});
 
-Object.defineProperty(proto, "onExit", {
-  get: function() {
+
+  get onExit() {
     return this._onExit;
-  },
-  set: function(s) {
+  }
+  set onExit(s) {
     this._onExit = s;
   }
-});
 
-Node.prototype.appendChild = function(child) {
-  child.unlink();
-  child._parent = this;
-  if (this._lastChild) {
-    this._lastChild._next = child;
-    child._prev = this._lastChild;
-    this._lastChild = child;
-  } else {
-    this._firstChild = child;
-    this._lastChild = child;
-  }
-};
 
-Node.prototype.prependChild = function(child) {
-  child.unlink();
-  child._parent = this;
-  if (this._firstChild) {
-    this._firstChild._prev = child;
-    child._next = this._firstChild;
-    this._firstChild = child;
-  } else {
-    this._firstChild = child;
-    this._lastChild = child;
+  appendChild(child: Node) {
+    child.unlink();
+    child._parent = this;
+    if (this._lastChild) {
+      this._lastChild._next = child;
+      child._prev = this._lastChild;
+      this._lastChild = child;
+    } else {
+      this._firstChild = child;
+      this._lastChild = child;
+    }
   }
-};
 
-Node.prototype.unlink = function() {
-  if (this._prev) {
-    this._prev._next = this._next;
-  } else if (this._parent) {
-    this._parent._firstChild = this._next;
+  prependChild(child: Node) {
+    child.unlink();
+    child._parent = this;
+    if (this._firstChild) {
+      this._firstChild._prev = child;
+      child._next = this._firstChild;
+      this._firstChild = child;
+    } else {
+      this._firstChild = child;
+      this._lastChild = child;
+    }
   }
-  if (this._next) {
-    this._next._prev = this._prev;
-  } else if (this._parent) {
-    this._parent._lastChild = this._prev;
-  }
-  this._parent = null;
-  this._next = null;
-  this._prev = null;
-};
 
-Node.prototype.insertAfter = function(sibling) {
-  sibling.unlink();
-  sibling._next = this._next;
-  if (sibling._next) {
-    sibling._next._prev = sibling;
+  unlink() {
+    if (this._prev) {
+      this._prev._next = this._next;
+    } else if (this._parent) {
+      this._parent._firstChild = this._next;
+    }
+    if (this._next) {
+      this._next._prev = this._prev;
+    } else if (this._parent) {
+      this._parent._lastChild = this._prev;
+    }
+    this._parent = undefined;
+    this._next = undefined;
+    this._prev = undefined;
   }
-  sibling._prev = this;
-  this._next = sibling;
-  sibling._parent = this._parent;
-  if (!sibling._next) {
-    sibling._parent._lastChild = sibling;
-  }
-};
 
-Node.prototype.insertBefore = function(sibling) {
-  sibling.unlink();
-  sibling._prev = this._prev;
-  if (sibling._prev) {
-    sibling._prev._next = sibling;
+  insertAfter(sibling: Node) {
+    sibling.unlink();
+    sibling._next = this._next;
+    if (sibling._next) {
+      sibling._next._prev = sibling;
+    }
+    sibling._prev = this;
+    this._next = sibling;
+    sibling._parent = this._parent;
+    if (sibling._parent && !sibling._next) {
+      sibling._parent._lastChild = sibling;
+    }
   }
-  sibling._next = this;
-  this._prev = sibling;
-  sibling._parent = this._parent;
-  if (!sibling._prev) {
-    sibling._parent._firstChild = sibling;
-  }
-};
 
-Node.prototype.walker = function() {
-  var walker = new NodeWalker(this);
-  return walker;
-};
+  insertBefore(sibling: Node) {
+    sibling.unlink();
+    sibling._prev = this._prev;
+    if (sibling._prev) {
+      sibling._prev._next = sibling;
+    }
+    sibling._next = this;
+    this._prev = sibling;
+    sibling._parent = this._parent;
+    if (sibling._parent && !sibling._prev) {
+      sibling._parent._firstChild = sibling;
+    }
+  }
+
+}
 
 export default Node;
-
-/* Example of use of walker:
-
- var walker = w.walker();
- var event;
-
- while (event = walker.next()) {
- console.log(event.entering, event.node.type);
- }
-
- */

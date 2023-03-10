@@ -91,7 +91,7 @@ var reLinkLabel = /^\[(?:[^\\\[\]]|\\.){0,1000}\]/s;
 // Matches a string of non-special characters.
 var reMain = /^[^\n`\[\]\\!<&*_'"]+/m;
 
-var text = function(s) {
+var text = function(s: string) {
     var node = new Node("text");
     node._literal = s;
     return node;
@@ -100,9 +100,9 @@ var text = function(s) {
 // normalize a reference in reference link (remove []s, trim,
 // collapse internal space, unicode case fold.
 // See commonmark/commonmark.js#168.
-var normalizeReference = function(string) {
-    return string
-        .slice(1, string.length - 1)
+var normalizeReference = function(str: string) {
+    return str
+        .slice(1, str.length - 1)
         .trim()
         .replace(/[ \t\r\n]+/g, " ")
         .toLowerCase()
