@@ -61,9 +61,13 @@
     "marked": ">=4.0.10",
     "mem": ">=4.0.0",
     "rollup": "^1.29.0",
-    "rollup-plugin-uglify": "^6.0.4",
+    "rollup-plugin-sourcemaps": "^0.6.3",
+    "rollup-plugin-typescript": "^1.0.1",
+    "rollup-plugin-uglify": "^5.0.2",
     "serialize-javascript": "^6.0.0",
     "showdown": "^1.9.1",
+    "tslib": "^2.5.0",
+    "typescript": "^4.9.5",
     "uglify-js": "^3.14.5"
   }
 }

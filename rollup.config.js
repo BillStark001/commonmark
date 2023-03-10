@@ -3,13 +3,16 @@ import nodeResolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import json from "@rollup/plugin-json";
 import { uglify } from "rollup-plugin-uglify";
+import typescript from "rollup-plugin-typescript";
+import sourceMaps from "rollup-plugin-sourcemaps";
+
 import { version } from './package.json';
 
 var banner = "/* commonmark " + version + " https://github.com/commonmark/commonmark.js @license BSD3 */";
 
 export default {
-    input: "lib/index.js",
-    output: [
+  input: "./src/index.ts",
+  output: [
       {
         file: "dist/commonmark.js",
         format: "umd",
@@ -24,5 +27,14 @@ export default {
         plugins: [uglify()]
       }
     ],
-    plugins: [nodeResolve(), commonjs(), json()]
+    plugins: [
+      nodeResolve(), 
+      commonjs(), 
+      json(),
+      typescript({
+        exclude: "./node_modules/**",
+        typescript: require("typescript")
+      }),
+      sourceMaps()
+    ]
 };
