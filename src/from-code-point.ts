@@ -23,7 +23,7 @@ if (String.fromCodePoint) {
   const floor = Math.floor;
   _fromCodePoint = function(...codePoints: number[]) {
     const MAX_SIZE = 0x4000;
-    const codeUnits = [];
+    const codeUnits: number[] = [];
     let highSurrogate;
     let lowSurrogate;
     let index = -1;

@@ -28,9 +28,9 @@
     "commonmark": "./bin/commonmark"
   },
   "scripts": {
-    "build": "rollup -c",
+    "build": "tsc && rollup -c",
     "lint": "eslint .",
-    "test": "node ./test/test",
+    "test": "npx ts-node ./test/test",
     "prepublish": "npm run build",
     "pretest": "npm run build"
   },
@@ -38,7 +38,8 @@
     "entities": "^4.4.0",
     "mdurl": "~1.0.1",
     "minimist": "~1.2.5",
-    "string.prototype.repeat": "^1.0.0"
+    "string.prototype.repeat": "^1.0.0",
+    "ts-node": "^10.9.1"
   },
   "directories": {
     "lib": "./lib"

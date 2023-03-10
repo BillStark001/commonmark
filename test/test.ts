@@ -1,24 +1,60 @@
 #!/usr/bin/env node
 /* eslint-disable @typescript-eslint/no-var-requires */
-'use strict';
 
-// Using commonjs here so CI can run the test file on older Node.js versions
-var fs = require('fs');
-var commonmark = require('..');
+const fs = require('fs');
+const commonmark = require('../dist/commonmark');
+
+
+// Definitions
+
+
+
+interface Example {
+  number: number;
+  section: string;
+  markdown: string;
+  html: string;
+}
+
+type CursorFunction = (s: string) => Cursor;
+type CursorColor = () => Cursor;
+
+interface Cursor {
+  write: CursorFunction;
+  red: CursorColor;
+  cyan: CursorColor;
+  green: CursorColor;
+  reset: CursorColor;
+}
+
+interface Example {
+  number: number;
+  section: string;
+  markdown: string;
+  html: string;
+}
+
+interface Result {
+  passed: number;
+  failed: number;
+}
+
+interface TestCase {
+  name: string;
+  input: string; 
+  expected: string;
+}
+
+type Converter = (inStr: string) => string;
 
 // Home made mini-version of the npm ansi module:
-var escSeq = function(s) {
-  return function() {
-    process.stdout.write('\u001b' + s);
-    return this;
-  };
-};
 
-var repeat = function(pattern, count) {
+
+const repeat = function (pattern: string, count: number) {
   if (count < 1) {
     return '';
   }
-  var result = '';
+  let result = '';
   while (count > 1) {
     if (count & 1) {
       result += pattern;
@@ -29,8 +65,16 @@ var repeat = function(pattern, count) {
   return result + pattern;
 };
 
-var cursor = {
-  write: function(s) {
+
+const escSeq = function (s: string): CursorColor {
+  return function (this: Cursor) {
+    process.stdout.write('\u001b' + s);
+    return this;
+  };
+};
+
+const cursor: Cursor = {
+  write: function (s: string) {
     process.stdout.write(s);
     return this;
   },
@@ -40,32 +84,33 @@ var cursor = {
   reset: escSeq('[0m')
 };
 
-var writer = new commonmark.HtmlRenderer();
-var reader = new commonmark.Parser();
-var readerSmart = new commonmark.Parser({ smart: true });
+const writer = new commonmark.HtmlRenderer();
+const reader = new commonmark.Parser();
+const readerSmart = new commonmark.Parser({ smart: true });
 
-var results = {
+const results: Result = {
   passed: 0,
   failed: 0
 };
 
-var showSpaces = function(s) {
-  var t = s;
+
+const showSpaces = function (s: string) {
+  const t = s;
   return t.replace(/\t/g, '→').replace(/ /g, '␣');
 };
 
-var extractSpecTests = function(testfile) {
-  var data = fs.readFileSync(testfile, 'utf8');
-  var examples = [];
-  var current_section = '';
-  var example_number = 0;
-  var tests = data
+const extractSpecTests = function (testfile: string) {
+  const data = fs.readFileSync(testfile, 'utf8');
+  const examples: Example[] = [];
+  let current_section = '';
+  let example_number = 0;
+  const tests = data
     .replace(/\r\n?/g, '\n') // Normalize newlines for platform independence
     .replace(/^<!-- END TESTS -->(.|[\n])*/m, '');
 
   tests.replace(
     /^`{32} example\n([\s\S]*?)^\.\n([\s\S]*?)^`{32}$|^#{1,6} *(.*)$/gm,
-    function(_, markdownSubmatch, htmlSubmatch, sectionSubmatch) {
+    (_: string, markdownSubmatch: string, htmlSubmatch: string, sectionSubmatch: string) => {
       if (sectionSubmatch) {
         current_section = sectionSubmatch;
       } else {
@@ -77,15 +122,16 @@ var extractSpecTests = function(testfile) {
           number: example_number
         });
       }
+      return _;
     }
   );
   return examples;
 };
 
-var specTest = function(testcase, res, converter) {
-  var markdown = testcase.markdown.replace(/→/g, '\t');
-  var expected = testcase.html.replace(/→/g, '\t');
-  var actual = converter(markdown);
+const specTest = function (testcase: Example, res: Result, converter: Converter) {
+  const markdown = testcase.markdown.replace(/→/g, '\t');
+  const expected = testcase.html.replace(/→/g, '\t');
+  const actual = converter(markdown);
   if (actual === expected) {
     res.passed++;
     cursor
@@ -108,15 +154,15 @@ var specTest = function(testcase, res, converter) {
   }
 };
 
-var specTests = function(testfile, res, converter) {
+const specTests = function (testfile: string, res: Result, converter: Converter) {
   cursor.write('Spec tests [' + testfile + ']:\n');
 
-  var current_section = '';
-  var examples = extractSpecTests(testfile);
+  let current_section = '';
+  const examples = extractSpecTests(testfile);
 
   console.time('Elapsed time');
-  for (var i = 0; i < examples.length; i++) {
-    var testcase = examples[i];
+  for (let i = 0; i < examples.length; i++) {
+    const testcase = examples[i];
     if (testcase.section !== current_section) {
       if (current_section !== '') {
         cursor.write('\n');
@@ -135,10 +181,10 @@ var specTests = function(testfile, res, converter) {
   cursor.write('\n');
 };
 
-var pathologicalTest = function(testcase, res, converter) {
+const pathologicalTest = function (testcase: TestCase, res: Result, converter: Converter) {
   cursor.write(testcase.name + ' ');
   console.time('  elapsed time');
-  var actual = converter(testcase.input);
+  const actual = converter(testcase.input);
   if (actual === testcase.expected) {
     cursor
       .green()
@@ -161,22 +207,22 @@ var pathologicalTest = function(testcase, res, converter) {
   console.timeEnd('  elapsed time');
 };
 
-specTests('test/spec.txt', results, function(z) {
+specTests('test/spec.txt', results, function (z) {
   return writer.render(reader.parse(z));
 });
 
-specTests('test/smart_punct.txt', results, function(z) {
+specTests('test/smart_punct.txt', results, function (z) {
   return writer.render(readerSmart.parse(z));
 });
 
-specTests('test/regression.txt', results, function(z) {
+specTests('test/regression.txt', results, function (z) {
   return writer.render(reader.parse(z));
 });
 
 // pathological cases
 cursor.write('Pathological cases:\n');
 
-var cases = [
+const cases: TestCase[] = [
   {
     name: 'U+0000 in input',
     input: 'abc\u0000xyz\u0000\n',
@@ -186,21 +232,21 @@ var cases = [
     name: 'alternate line endings',
     input: '- a\n- b\r- c\r\n- d',
     expected:
-            '<ul>\n<li>a</li>\n<li>b</li>\n<li>c</li>\n<li>d</li>\n</ul>\n'
+      '<ul>\n<li>a</li>\n<li>b</li>\n<li>c</li>\n<li>d</li>\n</ul>\n'
   }
 ];
 
-var x;
+let x;
 for (x = 1000; x <= 10000; x *= 10) {
   cases.push({
     name: 'nested strong emph ' + x + ' deep',
     input: repeat('*a **a ', x) + 'b' + repeat(' a** a*', x),
     expected:
-            '<p>' +
-            repeat('<em>a <strong>a ', x) +
-            'b' +
-            repeat(' a</strong> a</em>', x) +
-            '</p>\n'
+      '<p>' +
+      repeat('<em>a <strong>a ', x) +
+      'b' +
+      repeat(' a</strong> a</em>', x) +
+      '</p>\n'
   });
 }
 for (x = 1000; x <= 10000; x *= 10) {
@@ -278,9 +324,9 @@ for (x = 1000; x <= 10000; x *= 10) {
     name: 'nested block quote ' + x + ' deep',
     input: repeat('> ', x) + 'a\n',
     expected:
-            repeat('<blockquote>\n', x) +
-            '<p>a</p>\n' +
-            repeat('</blockquote>\n', x)
+      repeat('<blockquote>\n', x) +
+      '<p>a</p>\n' +
+      repeat('</blockquote>\n', x)
   });
 }
 for (x = 1000; x <= 10000; x *= 10) {
@@ -306,20 +352,20 @@ for (x = 10; x <= 1000; x *= 10) {
 //           expected: '<p>' + repeat('[](', x) + '</p>\n'
 //         });
 // }
-var parse_and_render = function(z) {
+const parse_and_render = function (z: string) {
   return writer.render(reader.parse(z));
 };
 
-for (var j = 0; j < cases.length; j++) {
+for (let j = 0; j < cases.length; j++) {
   pathologicalTest(cases[j], results, parse_and_render);
 }
 cursor.write('\n');
 
 cursor.write(
   results.passed.toString() +
-        ' tests passed, ' +
-        results.failed.toString() +
-        ' failed.\n'
+  ' tests passed, ' +
+  results.failed.toString() +
+  ' failed.\n'
 );
 
 process.exit(results.failed);

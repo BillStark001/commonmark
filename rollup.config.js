@@ -8,33 +8,33 @@ import sourceMaps from 'rollup-plugin-sourcemaps';
 
 import { version } from './package.json';
 
-var banner = '/* commonmark ' + version + ' https://github.com/commonmark/commonmark.js @license BSD3 */';
+var banner =
+    '/* commonmark ' +
+    version +
+    ' https://github.com/commonmark/commonmark.js @license BSD3 */';
 
 export default {
   input: './src/index.ts',
   output: [
     {
       file: 'dist/commonmark.js',
-      format: 'umd',
+      format: 'cjs',
       name: 'commonmark',
       banner: banner,
     },
     {
       file: 'dist/commonmark.min.js',
-      format: 'umd',
+      format: 'iife',
       name: 'commonmark',
       banner: banner,
-      plugins: [uglify()]
-    }
+      plugins: [uglify()],
+    },
   ],
   plugins: [
-    nodeResolve(), 
-    commonjs(), 
+    nodeResolve(),
+    commonjs(),
     json(),
-    typescript({
-      exclude: './node_modules/**',
-      typescript: require('typescript')
-    }),
-    sourceMaps()
-  ]
+    typescript({ tsconfig: './tsconfig.json' }),
+    sourceMaps(),
+  ],
 };
