@@ -81,13 +81,13 @@ export default class XmlRenderer extends Renderer {
           attrs.push(['xmlns', 'http://commonmark.org/xml/1.0']);
           break;
         case 'list':
-          if (node.listType !== null) {
+          if (node.listType !== undefined) {
             attrs.push(['type', node.listType?.toLowerCase() ?? '']);
           }
-          if (node.listStart !== null) {
+          if (node.listStart !== undefined) {
             attrs.push(['start', String(node.listStart)]);
           }
-          if (node.listTight !== null) {
+          if (node.listTight !== undefined) {
             attrs.push([
               'tight',
               node.listTight ? 'true' : 'false'
@@ -95,7 +95,7 @@ export default class XmlRenderer extends Renderer {
           }
           // eslint-disable-next-line no-case-declarations
           const delim = node.listDelimiter;
-          if (delim !== null) {
+          if (delim !== undefined) {
             let delimword = '';
             if (delim === '.') {
               delimword = 'period';
