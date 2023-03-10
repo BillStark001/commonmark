@@ -1,37 +1,41 @@
 export type NodeType =
-  'text' | 'softbreak' | 'linebreak' | 'emph' | 'strong' | 'html_inline' | 'link' | 'image' | 'code' | 'document' | 'paragraph' |
-  'block_quote' | 'item' | 'list' | 'heading' | 'code_block' | 'html_block' | 'thematic_break' | 'custom_inline' | 'custom_block';
+  'text' | 'softbreak' | 'linebreak' | 'emph' | 'strong' | 'html_inline' | 
+  'link' | 'image' | 'code' | 'document' | 'paragraph' |
+  'block_quote' | 'item' | 'list' | 'heading' | 'code_block' | 'html_block' | 
+  'thematic_break' | 'custom_inline' | 'custom_block';
 
 export type Position = [[number, number], [number, number]];
 
 export interface ListData {
   type?: string;
   tight?: boolean;
-  start?: Node;
+  start?: number;
   delimiter?: string;
   bulletChar?: string;
+  padding?: number;
+  markerOffset?: number;
 }
 
 
 export const isContainer = (node: Node) => {
   switch (node.type) {
-    case 'document':
-    case 'block_quote':
-    case 'list':
-    case 'item':
-    case 'paragraph':
-    case 'heading':
-    case 'emph':
-    case 'strong':
-    case 'link':
-    case 'image':
-    case 'custom_inline':
-    case 'custom_block':
-      return true;
-    default:
-      return false;
+  case 'document':
+  case 'block_quote':
+  case 'list':
+  case 'item':
+  case 'paragraph':
+  case 'heading':
+  case 'emph':
+  case 'strong':
+  case 'link':
+  case 'image':
+  case 'custom_inline':
+  case 'custom_block':
+    return true;
+  default:
+    return false;
   }
-}
+};
 
 
 export class Node {
@@ -42,7 +46,7 @@ export class Node {
   _lastChild?: Node;
   _prev?: Node;
   _next?: Node;
-  _sourcepos?: Position;
+  _sourcepos: Position;
   _lastLineBlank: boolean;
   _lastLineChecked: boolean;
   _open: boolean;
@@ -55,15 +59,16 @@ export class Node {
   _isFenced: boolean;
   _fenceChar?: string;
   _fenceLength: number;
-  _fenceOffset?: string;
+  _fenceOffset?: number;
   _level?: number;
-  _onEnter?: () => void;
-  _onExit?: () => void;
+  _htmlBlockType?: number;
+  _onEnter?: string;
+  _onExit?: string;
 
 
   constructor(nodeType: NodeType, sourcepos?: Position) {
     this._type = nodeType;
-    this._sourcepos = sourcepos;
+    this._sourcepos = sourcepos ?? [[-1, -1], [-1, -1]];
     this._lastLineBlank = false;
     this._lastLineChecked = false;
     this._open = true;
@@ -171,7 +176,7 @@ export class Node {
   get listStart() {
     return this._listData.start;
   }
-  set listStart(n: Node | undefined) {
+  set listStart(n: number | undefined) {
     this._listData.start = n;
   }
 

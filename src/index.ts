@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 // commonmark.js - CommomMark in JavaScript
 // Copyright (C) 2014 John MacFarlane
@@ -11,8 +11,10 @@
 // var renderer = new HtmlRenderer();
 // console.log(renderer.render(parser.parse('Hello *world*')));
 
-export { default as Node } from "./node.js";
-export { default as Parser } from "./blocks.js";
-export { default as Renderer } from "./render/renderer.js";
-export { default as HtmlRenderer } from "./render/html.js";
-export { default as XmlRenderer } from "./render/xml.js";
+export { default as Node } from './node';
+export { default as Parser } from './parse/blocks';
+
+export { default as Renderer } from './render/renderer';
+export { default as HtmlRenderer } from './render/html';
+export { default as XmlRenderer } from './render/xml';
+
