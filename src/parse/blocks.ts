@@ -101,21 +101,35 @@ const endsWithBlankLine = (block?: Node) => {
 };
 
 export type BlockHandler = {
-  // 'finalize' is run when the block is closed.
-  // 'continue' is run to check whether the block is continuing
-  // at a certain line and offset (e.g. whether a block quote
-  // contains a `>`.  It returns 0 for matched, 1 for not matched,
-  // and 2 for "we've dealt with this line completely, go to next."
+  /**
+   * Run to check whether the block is continuing
+   * at a certain line and offset (e.g. whether a block quote
+   * contains a `>`). 
+   * @param parser 
+   * @param block 
+   * @returns 0 for matched, 1 for not matched,
+   * and 2 for "we've dealt with this line completely, go to next."
+   */
   continue: (parser: BlockParser, block: Node) => 0 | 1 | 2;
+  /**
+   * Run when the block is closed.
+   * @param parser 
+   * @param block 
+   */
   finalize: (parser: BlockParser, block: Node) => void;
   canContain: (t: NodeType) => boolean;
   acceptsLines: boolean;
 }
 
-// block start functions.  Return values:
-// 0 = no match
-// 1 = matched container, keep going
-// 2 = matched leaf, no more block starts
+/**
+ * Block start functions.  Return values: 
+ * 
+ * 0 = no match
+ * 
+ * 1 = matched container, keep going
+ * 
+ * 2 = matched leaf, no more block starts
+ */
 export type BlockStartsHandler = (parser: BlockParser, container: Node) => 0 | 1 | 2;
 
 const blockStarts: BlockStartsHandler[] = [
@@ -245,7 +259,7 @@ const blockStarts: BlockStartsHandler[] = [
         );
       }
       if (
-        container._string_content !== undefined && 
+        container._string_content !== undefined &&
         container._string_content.length > 0
       ) {
         const heading = new Node('heading', container.sourcepos);
@@ -401,7 +415,7 @@ const blocks: Record<NodeType, BlockHandler | undefined> = {
   item: {
     continue: function (parser, container) {
       if (parser.blank) {
-        if (container._firstChild == undefined) {
+        if (container._firstChild === undefined) {
           // Blank line after empty list item
           return 1;
         } else {
@@ -687,8 +701,8 @@ export class BlockParser {
   constructor(options?: BlockParserOptions) {
 
     this.options = Object.assign({}, options);
-    this.blocks = blocks;
-    this.blockStarts = blockStarts;
+    this.blocks = Object.assign({}, blocks);
+    this.blockStarts = [...blockStarts];
     this.inlineParser = new InlineParser(options);
 
     this.doc = newDocument();
@@ -727,8 +741,12 @@ export class BlockParser {
   }
 
 
-  // Add a line to the block at the tip.  We assume the tip
-  // can accept lines -- that check should be done before calling this.
+  /**
+   * Add a line to the block at the tip.  
+   * 
+   * We assume the tip
+   * can accept lines -- that check should be done before calling this.
+   */
   addLine() {
     if (this.partiallyConsumedTab) {
       this.offset += 1; // skip over tab
@@ -739,9 +757,16 @@ export class BlockParser {
     this.tip._string_content += this.currentLine.slice(this.offset) + '\n';
   }
 
-  // Add block of type tag as a child of the tip.  If the tip can't
-  // accept children, close and finalize it and try its parent,
-  // and so on til we find a block that can accept children.
+  /**
+   * Add block of type tag as a child of the tip.  
+   * 
+   * If the tip can't
+   * accept children, close and finalize it and try its parent,
+   * and so on til we find a block that can accept children.
+   * @param tag 
+   * @param offset 
+   * @returns 
+   */
   addChild(tag: NodeType, offset: number) {
     while (!this.blocks[this.tip.type]?.canContain(tag)) {
       this.finalize(this.tip, this.lineNumber - 1);
@@ -759,7 +784,9 @@ export class BlockParser {
   }
 
 
-  // Finalize and close any unmatched blocks.
+  /**
+   * Finalize and close any unmatched blocks.
+   */
   closeUnmatchedBlocks() {
     if (!this.allClosed) {
       // finalize any blocks not matched
@@ -832,9 +859,14 @@ export class BlockParser {
     this.indented = this.indent >= CODE_INDENT;
   }
 
-  // Analyze a line of text and update the document appropriately.
-  // We parse markdown text by calling this on each line of input,
-  // then finalizing the document.
+  /**
+   * Analyze a line of text and update the document appropriately.
+   * 
+   * We parse markdown text by calling this on each line of input,
+   * then finalizing the document.
+   * @param ln 
+   * @returns 
+   */
   incorporateLine(ln: string) {
     let all_matched = true;
     let t;
@@ -968,7 +1000,7 @@ export class BlockParser {
         // if HtmlBlock, check for end condition
         if (
           t === 'html_block' &&
-          container._htmlBlockType !== undefined && 
+          container._htmlBlockType !== undefined &&
           container._htmlBlockType >= 1 &&
           container._htmlBlockType <= 5 &&
           reHtmlBlockClose[container._htmlBlockType].test(
@@ -988,11 +1020,15 @@ export class BlockParser {
     this.lastLineLength = ln.length;
   }
 
-  // Finalize a block.  Close it and do any necessary postprocessing,
-  // e.g. creating string_content from strings, setting the 'tight'
-  // or 'loose' status of a list, and parsing the beginnings
-  // of paragraphs for reference definitions.  Reset the tip to the
-  // parent of the closed block.
+  /**
+   * Finalize a block.  Close it and do any necessary postprocessing,
+   * e.g. creating string_content from strings, setting the 'tight'
+   * or 'loose' status of a list, and parsing the beginnings
+   * of paragraphs for reference definitions.  Reset the tip to the
+   * parent of the closed block.
+   * @param block 
+   * @param lineNumber 
+   */
   finalize(block: Node, lineNumber: number) {
     const above = block._parent;
     block._open = false;
@@ -1003,8 +1039,11 @@ export class BlockParser {
     this.tip = above as Node;
   }
 
-  // Walk through a block & children recursively, parsing string content
-  // into inline content where appropriate.
+  /**
+   * Walk through a block & children recursively, parsing string content
+   * into inline content where appropriate.
+   * @param block 
+   */
   processInlines(block: Node) {
     let node, event, t;
     const walker = new NodeWalker(block);

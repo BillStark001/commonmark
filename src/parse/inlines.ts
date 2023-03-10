@@ -41,19 +41,19 @@ const rePunctuation = new RegExp(
 
 const reLinkTitle = new RegExp(
   '^(?:"(' +
-        ESCAPED_CHAR +
-        '|\\\\[^\\\\]' +
-        '|[^\\\\"\\x00])*"' +
-        '|' +
-        '\'(' +
-        ESCAPED_CHAR +
-        '|\\\\[^\\\\]' +
-        '|[^\\\\\'\\x00])*\'' +
-        '|' +
-        '\\((' +
-        ESCAPED_CHAR +
-        '|\\\\[^\\\\]' +
-        '|[^\\\\()\\x00])*\\))'
+  ESCAPED_CHAR +
+  '|\\\\[^\\\\]' +
+  '|[^\\\\"\\x00])*"' +
+  '|' +
+  '\'(' +
+  ESCAPED_CHAR +
+  '|\\\\[^\\\\]' +
+  '|[^\\\\\'\\x00])*\'' +
+  '|' +
+  '\\((' +
+  ESCAPED_CHAR +
+  '|\\\\[^\\\\]' +
+  '|[^\\\\()\\x00])*\\))'
 );
 
 const reLinkDestinationBraces = /^(?:<(?:[^<>\n\\\x00]|\\.)*>)/;
@@ -97,13 +97,13 @@ export interface InlineParserOptions {
 }
 
 export interface Delimiters {
-  cc: number; 
-  numdelims: number; 
-  origdelims: number; 
-  node: Node; 
-  previous?: Delimiters; 
-  next?: Delimiters; 
-  can_open: boolean; 
+  cc: number;
+  numdelims: number;
+  origdelims: number;
+  node: Node;
+  previous?: Delimiters;
+  next?: Delimiters;
+  can_open: boolean;
   can_close: boolean;
 }
 
@@ -112,7 +112,7 @@ export interface Brackets {
   previous?: Brackets;
   previousDelimiter?: Delimiters;
   bracketAfter?: boolean;
-  index: number; 
+  index: number;
   image: boolean;
   active: boolean;
 }
@@ -150,6 +150,10 @@ const removeDelimitersBetween = (bottom: Delimiters, top: Delimiters) => {
   }
 };
 
+
+/**
+ * An InlineParser keeps track of a subject (a string to be parsed) and a position in that subject.
+ */
 export class InlineParser {
 
   options: InlineParserOptions;
@@ -166,18 +170,12 @@ export class InlineParser {
     this.refmap = {};
   }
 
-  
-
-  
-
-  // INLINE PARSER
-
-  // These are methods of an InlineParser object, defined below.
-  // An InlineParser keeps track of a subject (a string to be
-  // parsed) and a position in that subject.
-
-  // If re matches at current position in the subject, advance
-  // position in subject and return the match; otherwise return undefined.
+  /**
+   * If `re` matches at current position in the subject, advance
+   * position in subject and return the match; otherwise return undefined.
+   * @param re 
+   * @returns 
+   */
   match(re: RegExp) {
     const m = re.exec(this.subject.slice(this.pos));
     if (m === null) {
@@ -188,8 +186,11 @@ export class InlineParser {
     }
   }
 
-  // Returns the code for the character at the current subject position, or -1
-  // there are no more characters.
+  /**
+   * Returns the code for the character at the current subject position, 
+   * or -1 if there are no more characters.
+   * @returns 
+   */
   peek() {
     if (this.pos < this.subject.length) {
       return this.subject.charCodeAt(this.pos);
@@ -291,7 +292,11 @@ export class InlineParser {
     }
   }
 
-  // Attempt to parse a raw HTML tag.
+  /**
+   * Attempt to parse a raw HTML tag.
+   * @param block 
+   * @returns 
+   */
   parseHtmlTag(block: Node) {
     const m = this.match(reHtmlTag);
     if (m === undefined) {
@@ -304,10 +309,14 @@ export class InlineParser {
     }
   }
 
-  // Scan a sequence of characters with code cc, and return information about
-  // the number of delimiters and whether they are positioned such that
-  // they can open and/or close emphasis or strong emphasis.  A utility
-  // function for strong/emph parsing.
+  /**
+   * Scan a sequence of characters with code `cc`, and return information about
+   * the number of delimiters and whether they are positioned such that
+   * they can open and/or close emphasis or strong emphasis.  A utility
+   * function for strong/emph parsing.
+   * @param cc 
+   * @returns 
+   */
   scanDelims(cc: number) {
     let numdelims = 0;
     const startpos = this.pos;
@@ -330,8 +339,8 @@ export class InlineParser {
     const char_before = startpos === 0 ? '\n' : this.subject.charAt(startpos - 1);
 
     const cc_after = this.peek();
-    const char_after = cc_after === -1 ? 
-      '\n' : 
+    const char_after = cc_after === -1 ?
+      '\n' :
       fromCodePoint(cc_after);
 
     const after_is_whitespace = reUnicodeWhitespaceChar.test(char_after);
@@ -340,13 +349,13 @@ export class InlineParser {
     const before_is_punctuation = rePunctuation.test(char_before);
 
     const left_flanking =
-        !after_is_whitespace &&
-        (!after_is_punctuation ||
-            before_is_whitespace ||
-            before_is_punctuation);
+      !after_is_whitespace &&
+      (!after_is_punctuation ||
+        before_is_whitespace ||
+        before_is_punctuation);
     const right_flanking =
-        !before_is_whitespace &&
-        (!before_is_punctuation || after_is_whitespace || after_is_punctuation);
+      !before_is_whitespace &&
+      (!before_is_punctuation || after_is_whitespace || after_is_punctuation);
     if (cc === C_UNDERSCORE) {
       can_open = left_flanking && (!right_flanking || before_is_punctuation);
       can_close = right_flanking && (!left_flanking || after_is_punctuation);
@@ -361,7 +370,12 @@ export class InlineParser {
     return { numdelims: numdelims, can_open: can_open, can_close: can_close };
   }
 
-  // Handle a delimiter marker for emphasis or a quote.
+  /**
+   * Handle a delimiter marker for emphasis or a quote.
+   * @param cc 
+   * @param block 
+   * @returns 
+   */
   handleDelim(cc: number, block: Node) {
     const res = this.scanDelims(cc);
     if (!res) {
@@ -385,7 +399,7 @@ export class InlineParser {
     // Add entry to stack for this opener
     if (
       (res.can_open || res.can_close) &&
-        (this.options.smart || (cc !== C_SINGLEQUOTE && cc !== C_DOUBLEQUOTE))
+      (this.options.smart || (cc !== C_SINGLEQUOTE && cc !== C_DOUBLEQUOTE))
     ) {
       this.delimiters = {
         cc: cc,
@@ -410,7 +424,7 @@ export class InlineParser {
       delim.previous.next = delim.next;
     }
     if (delim.next === undefined) {
-    // top of stack
+      // top of stack
       this.delimiters = delim.previous;
     } else {
       delim.next.previous = delim.previous;
@@ -442,7 +456,7 @@ export class InlineParser {
       if (!closer.can_close) {
         closer = closer.next;
       } else {
-      // found emphasis closer. now look back for first matching opener:
+        // found emphasis closer. now look back for first matching opener:
         opener = closer.previous;
         opener_found = false;
         switch (closercc) {
@@ -457,20 +471,20 @@ export class InlineParser {
           break;
         case C_ASTERISK:
           openers_bottom_index = 3 + (closer.can_open ? 3 : 0)
-                                          + (closer.origdelims % 3);
+              + (closer.origdelims % 3);
           break;
         default:
           openers_bottom_index = -1;
         }
         while (
           opener !== undefined &&
-                opener !== stack_bottom &&
-                opener !== openers_bottom[openers_bottom_index]
+          opener !== stack_bottom &&
+          opener !== openers_bottom[openers_bottom_index]
         ) {
           odd_match =
-                    (closer.can_open || opener.can_close) &&
-                    closer.origdelims % 3 !== 0 &&
-                    (opener.origdelims + closer.origdelims) % 3 === 0;
+            (closer.can_open || opener.can_close) &&
+            closer.origdelims % 3 !== 0 &&
+            (opener.origdelims + closer.origdelims) % 3 === 0;
           if (opener.cc === closer.cc && opener.can_open && !odd_match) {
             opener_found = true;
             break;
@@ -547,12 +561,12 @@ export class InlineParser {
           closer = closer.next;
         }
         if (!opener_found) {
-        // Set lower bound for future searches for openers:
+          // Set lower bound for future searches for openers:
           openers_bottom[openers_bottom_index] =
-                    old_closer.previous;
+            old_closer.previous;
           if (!old_closer.can_open) {
-          // We can remove a closer that can't be an opener,
-          // once we've seen there's no matching opener:
+            // We can remove a closer that can't be an opener,
+            // once we've seen there's no matching opener:
             this.removeDelimiter(old_closer);
           }
         }
@@ -572,7 +586,7 @@ export class InlineParser {
     if (title === undefined) {
       return undefined;
     } else {
-    // chop off quotes from title and unescape:
+      // chop off quotes from title and unescape:
       return unescapeString(title.slice(1, -1));
     }
   }
@@ -592,7 +606,7 @@ export class InlineParser {
       while ((c = this.peek()) !== -1) {
         if (
           c === C_BACKSLASH &&
-                reEscapable.test(this.subject.charAt(this.pos + 1))
+          reEscapable.test(this.subject.charAt(this.pos + 1))
         ) {
           this.pos += 1;
           if (this.peek() !== -1) {
@@ -623,7 +637,7 @@ export class InlineParser {
       res = this.subject.slice(savepos, this.pos);
       return normalizeURI(unescapeString(res));
     } else {
-    // chop off surrounding <..>:
+      // chop off surrounding <..>:
       return normalizeURI(unescapeString(res.slice(1, -1)));
     }
   }
@@ -670,10 +684,14 @@ export class InlineParser {
     return true;
   }
 
-  // Try to match close bracket against an opening in the delimiter
-  // stack.  Add either a link or image, or a plain [ character,
-  // to block's children.  If there is a matching delimiter,
-  // remove it from the delimiter stack.
+  /**
+   * Try to match close bracket against an opening in the delimiter
+   * stack.  Add either a link or image, or a plain [ character,
+   * to block's children.  If there is a matching delimiter,
+   * remove it from the delimiter stack.
+   * @param block 
+   * @returns 
+   */
   parseCloseBracket(block: Node) {
     let dest;
     let title;
@@ -688,13 +706,13 @@ export class InlineParser {
     opener = this.brackets;
 
     if (opener === undefined) {
-    // no matched opener, just return a literal
+      // no matched opener, just return a literal
       block.appendChild(text(']'));
       return true;
     }
 
     if (!opener.active) {
-    // no matched opener, just return a literal
+      // no matched opener, just return a literal
       block.appendChild(text(']'));
       // take opener off brackets stack
       this.removeBracket();
@@ -713,14 +731,14 @@ export class InlineParser {
       this.pos++;
       if (
         this.spnl() &&
-            (dest = this.parseLinkDestination()) !== undefined &&
-            this.spnl() &&
-            // make sure there's a space before the title:
-            ((reWhitespaceChar.test(this.subject.charAt(this.pos - 1)) &&
-                (title = this.parseLinkTitle())) ||
-                true) &&
-            this.spnl() &&
-            this.peek() === C_CLOSE_PAREN
+        (dest = this.parseLinkDestination()) !== undefined &&
+        this.spnl() &&
+        // make sure there's a space before the title:
+        ((reWhitespaceChar.test(this.subject.charAt(this.pos - 1)) &&
+          (title = this.parseLinkTitle())) ||
+          true) &&
+        this.spnl() &&
+        this.peek() === C_CLOSE_PAREN
       ) {
         this.pos += 1;
         matched = true;
@@ -730,23 +748,23 @@ export class InlineParser {
     }
 
     if (!matched) {
-    // Next, see if there's a link label
+      // Next, see if there's a link label
       const beforelabel = this.pos;
       const n = this.parseLinkLabel();
       if (n > 2) {
         reflabel = this.subject.slice(beforelabel, beforelabel + n);
       } else if (!opener.bracketAfter) {
-      // Empty or missing second label means to use the first label as the reference.
-      // The reference must not contain a bracket. If we know there's a bracket, we don't even bother checking it.
+        // Empty or missing second label means to use the first label as the reference.
+        // The reference must not contain a bracket. If we know there's a bracket, we don't even bother checking it.
         reflabel = this.subject.slice(opener.index, startpos);
       }
       if (n === 0) {
-      // If shortcut reference link, rewind before spaces we skipped.
+        // If shortcut reference link, rewind before spaces we skipped.
         this.pos = savepos;
       }
 
       if (reflabel) {
-      // lookup rawlabel in refmap
+        // lookup rawlabel in refmap
         const link = this.refmap[normalizeReference(reflabel)];
         if (link) {
           dest = link.destination;
@@ -790,7 +808,7 @@ export class InlineParser {
 
       return true;
     } else {
-    // no match
+      // no match
 
       this.removeBracket(); // remove this opener from stack
       this.pos = startpos;
@@ -817,7 +835,11 @@ export class InlineParser {
     this.brackets = this.brackets?.previous;
   }
 
-  // Attempt to parse an entity.
+  /**
+   * Attempt to parse an entity.
+   * @param block 
+   * @returns 
+   */
   parseEntity(block: Node) {
     let m;
     if ((m = this.match(reEntityHere))) {
@@ -828,8 +850,12 @@ export class InlineParser {
     }
   }
 
-  // Parse a run of ordinary characters, or a single character with
-  // a special meaning in markdown, as a plain string.
+  /**
+   * Parse a run of ordinary characters, or a single character with
+   * a special meaning in markdown, as a plain string.
+   * @param block 
+   * @returns 
+   */
   parseString(block: Node) {
     let m;
     if ((m = this.match(reMain))) {
@@ -838,27 +864,27 @@ export class InlineParser {
           text(
             m
               .replace(reEllipses, '\u2026')
-              .replace(reDash, function(chars) {
+              .replace(reDash, function (chars) {
                 let enCount = 0;
                 let emCount = 0;
                 if (chars.length % 3 === 0) {
-                // If divisible by 3, use all em dashes
+                  // If divisible by 3, use all em dashes
                   emCount = chars.length / 3;
                 } else if (chars.length % 2 === 0) {
-                // If divisible by 2, use all en dashes
+                  // If divisible by 2, use all en dashes
                   enCount = chars.length / 2;
                 } else if (chars.length % 3 === 2) {
-                // If 2 extra dashes, use en dash for last 2; em dashes for rest
+                  // If 2 extra dashes, use en dash for last 2; em dashes for rest
                   enCount = 1;
                   emCount = (chars.length - 2) / 3;
                 } else {
-                // Use en dashes for last 4 hyphens; em dashes for rest
+                  // Use en dashes for last 4 hyphens; em dashes for rest
                   enCount = 2;
                   emCount = (chars.length - 4) / 3;
                 }
                 return (
                   '\u2014'.repeat(emCount) +
-                                '\u2013'.repeat(enCount)
+                  '\u2013'.repeat(enCount)
                 );
               })
           )
@@ -872,17 +898,23 @@ export class InlineParser {
     }
   }
 
-  // Parse a newline.  If it was preceded by two spaces, return a hard
-  // line break; otherwise a soft line break.
+  /**
+   * Parse a newline.  
+   * 
+   * If it was preceded by two spaces, return a hard
+   * line break; otherwise a soft line break.
+   * @param block 
+   * @returns 
+   */
   parseNewline(block: Node) {
     this.pos += 1; // assume we're at a \n
     // check previous node for trailing spaces
     const lastc = block._lastChild;
     if (
       lastc &&
-        lastc.type === 'text' &&
-        lastc._literal !== undefined && 
-        lastc._literal[lastc._literal.length - 1] === ' '
+      lastc.type === 'text' &&
+      lastc._literal !== undefined &&
+      lastc._literal[lastc._literal.length - 1] === ' '
     ) {
       const hardbreak = lastc._literal[lastc._literal.length - 2] === ' ';
       lastc._literal = lastc._literal.replace(reFinalSpace, '');
@@ -894,7 +926,12 @@ export class InlineParser {
     return true;
   }
 
-  // Attempt to parse a link reference, modifying refmap.
+  /**
+   * Attempt to parse a link reference, modifying refmap.
+   * @param s 
+   * @param refmap 
+   * @returns 
+   */
   parseReference(s: string, refmap: RefMap) {
     this.subject = s;
     this.pos = 0;
@@ -944,9 +981,9 @@ export class InlineParser {
       if (title === '') {
         atLineEnd = false;
       } else {
-      // the potential title we found is not at the line end,
-      // but it could still be a legal link reference if we
-      // discard the title
+        // the potential title we found is not at the line end,
+        // but it could still be a legal link reference if we
+        // discard the title
         title = '';
         // rewind before spaces
         this.pos = beforetitle;
@@ -962,7 +999,7 @@ export class InlineParser {
 
     const normlabel = normalizeReference(rawlabel);
     if (normlabel === '') {
-    // label must contain non-whitespace characters
+      // label must contain non-whitespace characters
       this.pos = startpos;
       return 0;
     }
@@ -973,9 +1010,14 @@ export class InlineParser {
     return this.pos - startpos;
   }
 
-  // Parse the next inline element in subject, advancing subject position.
-  // On success, add the result to block's children and return true.
-  // On failure, return false.
+  /**
+   * Parse the next inline element in subject, advancing subject position.
+   * @param block 
+   * @returns   
+   * On success, add the result to block's children and return true.
+   * 
+   * On failure, return false.
+   */
   parseInline(block: Node) {
     let res = false;
     const c = this.peek();
@@ -1027,14 +1069,17 @@ export class InlineParser {
     return true;
   }
 
-  // Parse string content in block into inline children,
-  // using refmap to resolve references.
+  /**
+   * Parse string content in block into inline children,
+   * using refmap to resolve references.
+   * @param block 
+   */
   parse(block: Node) {
     this.subject = block._string_content?.trim() ?? '';
     this.pos = 0;
     this.delimiters = undefined;
     this.brackets = undefined;
-    while (this.parseInline(block)) {}
+    while (this.parseInline(block)) { }
     block._string_content = undefined; // allow raw string to be garbage collected
     this.processEmphasis(undefined);
   }
