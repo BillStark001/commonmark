@@ -66,6 +66,18 @@ export class Node {
   _onExit?: string;
 
 
+  removeCycle() {
+    const n: Node = Object.assign({}, this);
+    delete n._parent;
+    delete n._lastChild;
+    delete n._prev;
+    if (n._firstChild !== undefined)
+      n._firstChild = n._firstChild.removeCycle();
+    if (n._next !== undefined)
+      n._next = n._next.removeCycle();
+    return n;
+  }
+  
   constructor(nodeType: NodeType, sourcepos?: Position) {
     this._type = nodeType;
     this._sourcepos = sourcepos ?? [[-1, -1], [-1, -1]];

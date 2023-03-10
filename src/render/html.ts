@@ -1,5 +1,3 @@
-'use strict';
-
 import { escapeXml } from '../common';
 import Node from '../node';
 import Renderer from './renderer';
@@ -39,10 +37,6 @@ export default class HtmlRenderer extends Renderer {
   readonly options: HtmlRenderingOptions;
 
   disableTags: number;
-  buffer: string;
-  lastOut: string;
-
-
 
   constructor(options?: HtmlRenderingOptions) {
     super();
@@ -55,8 +49,6 @@ export default class HtmlRenderer extends Renderer {
     // else use escapeXml
 
     this.disableTags = 0;
-    this.lastOut = '\n';
-    this.buffer = '';
   }
 
   /* Helper methods */
@@ -90,7 +82,7 @@ export default class HtmlRenderer extends Renderer {
       return;
     }
     this.buffer += '<' + name;
-    if (attrs && attrs.length > 0) {
+    if (attrs !== undefined && attrs.length > 0) {
       let i = 0;
       let attrib;
       while ((attrib = attrs[i]) !== undefined) {

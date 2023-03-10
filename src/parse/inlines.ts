@@ -1,5 +1,3 @@
-'use strict';
-
 import Node from '../node';
 import * as common from '../common';
 import fromCodePoint from '../from-code-point';
@@ -227,12 +225,11 @@ export class InlineParser {
         contents = this.subject
           .slice(afterOpenTicks, this.pos - ticks.length)
           .replace(/\n/gm, ' ');
-        if (
-          contents.length > 0 &&
-                contents.match(/[^ ]/) !== undefined &&
-                contents[0] == ' ' &&
-                contents[contents.length - 1] == ' '
-        ) {
+        const cond = contents.length > 0 &&
+          contents.match(/[^ ]/) !== null &&
+          contents[0] === ' ' &&
+          contents[contents.length - 1] === ' ';
+        if (cond) {
           node._literal = contents.slice(1, contents.length - 1);
         } else {
           node._literal = contents;
@@ -545,7 +542,7 @@ export class InlineParser {
           closer.node._literal = '\u201D';
           if (opener_found) {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            opener!.node.literal = '\u201C';
+            opener!.node._literal = '\u201C';
           }
           closer = closer.next;
         }
@@ -611,7 +608,7 @@ export class InlineParser {
             this.pos += 1;
             openparens -= 1;
           }
-        } else if (reWhitespaceChar.exec(fromCodePoint(c)) !== undefined) {
+        } else if (reWhitespaceChar.exec(fromCodePoint(c)) !== null) {
           break;
         } else {
           this.pos += 1;

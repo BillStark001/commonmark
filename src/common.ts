@@ -1,4 +1,5 @@
 import { decodeHTML } from 'entities';
+import mdurl from 'mdurl';
 
 const C_BACKSLASH = 92;
 
@@ -70,7 +71,7 @@ const unescapeString = function(s: string) {
 
 const normalizeURI = function(uri: string) {
   try {
-    return encodeURI(uri);
+    return mdurl.encode(uri);
   } catch (err) {
     return uri;
   }

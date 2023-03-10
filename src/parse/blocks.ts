@@ -1,5 +1,3 @@
-'use strict';
-
 import Node, { ListData, NodeType } from '../node.js';
 import { unescapeString, OPENTAG, CLOSETAG } from '../common.js';
 import InlineParser, { InlineParserOptions, RefMap } from './inlines.js';
@@ -143,7 +141,7 @@ const blockStarts: BlockStartsHandler[] = [
 
   // ATX heading
   function (parser) {
-    let match;
+    let match: RegExpMatchArray | null;
     if (
       !parser.indented &&
       (match = parser.currentLine
@@ -169,7 +167,7 @@ const blockStarts: BlockStartsHandler[] = [
 
   // Fenced code block
   function (parser) {
-    let match;
+    let match: RegExpMatchArray | null;
     if (
       !parser.indented &&
       (match = parser.currentLine

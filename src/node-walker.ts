@@ -57,7 +57,7 @@ export class NodeWalker {
       }
     } else if (cur === this.root) {
       this._current = undefined;
-    } else if (cur.next === null) {
+    } else if (cur.next === undefined) {
       this._current = cur.parent;
       this._entering = false;
     } else {

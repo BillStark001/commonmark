@@ -4,7 +4,6 @@
 const fs = require('fs');
 const commonmark = require('../dist/commonmark');
 
-
 // Definitions
 
 
@@ -207,17 +206,21 @@ const pathologicalTest = function (testcase: TestCase, res: Result, converter: C
   console.timeEnd('  elapsed time');
 };
 
-specTests('test/spec.txt', results, function (z) {
-  return writer.render(reader.parse(z));
-});
+const parse_and_render = function (z: string) {
+  const ast = reader.parse(z);
+  return writer.render(ast);
+};
 
-specTests('test/smart_punct.txt', results, function (z) {
-  return writer.render(readerSmart.parse(z));
-});
+const parse_and_render_smart = function (z: string) {
+  const ast = readerSmart.parse(z);
+  return writer.render(ast);
+};
 
-specTests('test/regression.txt', results, function (z) {
-  return writer.render(reader.parse(z));
-});
+specTests('test/spec.txt', results, parse_and_render);
+
+specTests('test/smart_punct.txt', results, parse_and_render_smart);
+
+specTests('test/regression.txt', results, parse_and_render);
 
 // pathological cases
 cursor.write('Pathological cases:\n');
@@ -345,20 +348,19 @@ for (x = 10; x <= 1000; x *= 10) {
 }
 
 // Commented out til we have a fix... see #129
-// for (x = 1000; x <= 10000; x *= 10) {
-//     cases.push(
-//         { name: '[]( ' + x + ' deep',
-//           input: repeat('[](', x) + '\n',
-//           expected: '<p>' + repeat('[](', x) + '</p>\n'
-//         });
-// }
-const parse_and_render = function (z: string) {
-  return writer.render(reader.parse(z));
-};
+for (x = 1000; x <= 10000; x *= 10) {
+  cases.push(
+    { name: '[]( ' + x + ' deep',
+      input: repeat('[](', x) + '\n',
+      expected: '<p>' + repeat('[](', x) + '</p>\n'
+    });
+}
+
 
 for (let j = 0; j < cases.length; j++) {
   pathologicalTest(cases[j], results, parse_and_render);
 }
+
 cursor.write('\n');
 
 cursor.write(
