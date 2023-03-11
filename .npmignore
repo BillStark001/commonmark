@@ -1,5 +1,6 @@
 *
 !bin/*
 !dist/*
-!lib/*
-!lib/render/*
+!src/*
+!src/render/*
+!src/parse/*

@@ -17,11 +17,11 @@
   "license": "BSD-2-Clause",
   "type": "commonjs",
   "main": "./dist/commonmark.js",
-  "module": "./lib/index.js",
+  "module": "./src/index.ts",
   "exports": {
     ".": {
       "require": "./dist/commonmark.js",
-      "default": "./lib/index.js"
+      "default": "./src/index.ts"
     }
   },
   "bin": {
@@ -42,7 +42,7 @@
     "string.prototype.repeat": "^1.0.0"
   },
   "directories": {
-    "lib": "./lib"
+    "lib": "./src"
   },
   "engines": {
     "node": "*"
