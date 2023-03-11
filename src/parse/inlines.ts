@@ -33,11 +33,8 @@ const ESCAPED_CHAR = '\\\\' + ESCAPABLE;
 const ENTITY = common.ENTITY;
 const reHtmlTag = common.reHtmlTag;
 
-// Regex definitions
 
-const rePunctuation = new RegExp(
-  /^[!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~\xA1\xA7\xAB\xB6\xB7\xBB\xBF\u037E\u0387\u055A-\u055F\u0589\u058A\u05BE\u05C0\u05C3\u05C6\u05F3\u05F4\u0609\u060A\u060C\u060D\u061B\u061E\u061F\u066A-\u066D\u06D4\u0700-\u070D\u07F7-\u07F9\u0830-\u083E\u085E\u0964\u0965\u0970\u0AF0\u0DF4\u0E4F\u0E5A\u0E5B\u0F04-\u0F12\u0F14\u0F3A-\u0F3D\u0F85\u0FD0-\u0FD4\u0FD9\u0FDA\u104A-\u104F\u10FB\u1360-\u1368\u1400\u166D\u166E\u169B\u169C\u16EB-\u16ED\u1735\u1736\u17D4-\u17D6\u17D8-\u17DA\u1800-\u180A\u1944\u1945\u1A1E\u1A1F\u1AA0-\u1AA6\u1AA8-\u1AAD\u1B5A-\u1B60\u1BFC-\u1BFF\u1C3B-\u1C3F\u1C7E\u1C7F\u1CC0-\u1CC7\u1CD3\u2010-\u2027\u2030-\u2043\u2045-\u2051\u2053-\u205E\u207D\u207E\u208D\u208E\u2308-\u230B\u2329\u232A\u2768-\u2775\u27C5\u27C6\u27E6-\u27EF\u2983-\u2998\u29D8-\u29DB\u29FC\u29FD\u2CF9-\u2CFC\u2CFE\u2CFF\u2D70\u2E00-\u2E2E\u2E30-\u2E42\u3001-\u3003\u3008-\u3011\u3014-\u301F\u3030\u303D\u30A0\u30FB\uA4FE\uA4FF\uA60D-\uA60F\uA673\uA67E\uA6F2-\uA6F7\uA874-\uA877\uA8CE\uA8CF\uA8F8-\uA8FA\uA8FC\uA92E\uA92F\uA95F\uA9C1-\uA9CD\uA9DE\uA9DF\uAA5C-\uAA5F\uAADE\uAADF\uAAF0\uAAF1\uABEB\uFD3E\uFD3F\uFE10-\uFE19\uFE30-\uFE52\uFE54-\uFE61\uFE63\uFE68\uFE6A\uFE6B\uFF01-\uFF03\uFF05-\uFF0A\uFF0C-\uFF0F\uFF1A\uFF1B\uFF1F\uFF20\uFF3B-\uFF3D\uFF3F\uFF5B\uFF5D\uFF5F-\uFF65]|\uD800[\uDD00-\uDD02\uDF9F\uDFD0]|\uD801\uDD6F|\uD802[\uDC57\uDD1F\uDD3F\uDE50-\uDE58\uDE7F\uDEF0-\uDEF6\uDF39-\uDF3F\uDF99-\uDF9C]|\uD804[\uDC47-\uDC4D\uDCBB\uDCBC\uDCBE-\uDCC1\uDD40-\uDD43\uDD74\uDD75\uDDC5-\uDDC9\uDDCD\uDDDB\uDDDD-\uDDDF\uDE38-\uDE3D\uDEA9]|\uD805[\uDCC6\uDDC1-\uDDD7\uDE41-\uDE43\uDF3C-\uDF3E]|\uD809[\uDC70-\uDC74]|\uD81A[\uDE6E\uDE6F\uDEF5\uDF37-\uDF3B\uDF44]|\uD82F\uDC9F|\uD836[\uDE87-\uDE8B]/
-);
+// Regex definitions
 
 const reLinkTitle = new RegExp(
   '^(?:"(' +
@@ -78,8 +75,6 @@ const reSpnl = /^ *(?:\n *)?/;
 
 const reWhitespaceChar = /^[ \t\n\x0b\x0c\x0d]/;
 
-const reUnicodeWhitespaceChar = /^\s/;
-
 const reFinalSpace = / *$/;
 
 const reInitialSpace = /^ */;
@@ -88,12 +83,62 @@ const reSpaceAtEndOfLine = /^ *(?:\n|$)/;
 
 const reLinkLabel = /^\[(?:[^\\\[\]]|\\.){0,1000}\]/s;
 
-// Matches a string of non-special characters.
+// Used in run delimiters
+const reUnicodeWhitespaceChar = /^\s/;
+const rePunctuation = new RegExp(
+  /^[!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~\xA1\xA7\xAB\xB6\xB7\xBB\xBF\u037E\u0387\u055A-\u055F\u0589\u058A\u05BE\u05C0\u05C3\u05C6\u05F3\u05F4\u0609\u060A\u060C\u060D\u061B\u061E\u061F\u066A-\u066D\u06D4\u0700-\u070D\u07F7-\u07F9\u0830-\u083E\u085E\u0964\u0965\u0970\u0AF0\u0DF4\u0E4F\u0E5A\u0E5B\u0F04-\u0F12\u0F14\u0F3A-\u0F3D\u0F85\u0FD0-\u0FD4\u0FD9\u0FDA\u104A-\u104F\u10FB\u1360-\u1368\u1400\u166D\u166E\u169B\u169C\u16EB-\u16ED\u1735\u1736\u17D4-\u17D6\u17D8-\u17DA\u1800-\u180A\u1944\u1945\u1A1E\u1A1F\u1AA0-\u1AA6\u1AA8-\u1AAD\u1B5A-\u1B60\u1BFC-\u1BFF\u1C3B-\u1C3F\u1C7E\u1C7F\u1CC0-\u1CC7\u1CD3\u2010-\u2027\u2030-\u2043\u2045-\u2051\u2053-\u205E\u207D\u207E\u208D\u208E\u2308-\u230B\u2329\u232A\u2768-\u2775\u27C5\u27C6\u27E6-\u27EF\u2983-\u2998\u29D8-\u29DB\u29FC\u29FD\u2CF9-\u2CFC\u2CFE\u2CFF\u2D70\u2E00-\u2E2E\u2E30-\u2E42\u3001-\u3003\u3008-\u3011\u3014-\u301F\u3030\u303D\u30A0\u30FB\uA4FE\uA4FF\uA60D-\uA60F\uA673\uA67E\uA6F2-\uA6F7\uA874-\uA877\uA8CE\uA8CF\uA8F8-\uA8FA\uA8FC\uA92E\uA92F\uA95F\uA9C1-\uA9CD\uA9DE\uA9DF\uAA5C-\uAA5F\uAADE\uAADF\uAAF0\uAAF1\uABEB\uFD3E\uFD3F\uFE10-\uFE19\uFE30-\uFE52\uFE54-\uFE61\uFE63\uFE68\uFE6A\uFE6B\uFF01-\uFF03\uFF05-\uFF0A\uFF0C-\uFF0F\uFF1A\uFF1B\uFF1F\uFF20\uFF3B-\uFF3D\uFF3F\uFF5B\uFF5D\uFF5F-\uFF65]|\uD800[\uDD00-\uDD02\uDF9F\uDFD0]|\uD801\uDD6F|\uD802[\uDC57\uDD1F\uDD3F\uDE50-\uDE58\uDE7F\uDEF0-\uDEF6\uDF39-\uDF3F\uDF99-\uDF9C]|\uD804[\uDC47-\uDC4D\uDCBB\uDCBC\uDCBE-\uDCC1\uDD40-\uDD43\uDD74\uDD75\uDDC5-\uDDC9\uDDCD\uDDDB\uDDDD-\uDDDF\uDE38-\uDE3D\uDEA9]|\uD805[\uDCC6\uDDC1-\uDDD7\uDE41-\uDE43\uDF3C-\uDF3E]|\uD809[\uDC70-\uDC74]|\uD81A[\uDE6E\uDE6F\uDEF5\uDF37-\uDF3B\uDF44]|\uD82F\uDC9F|\uD836[\uDE87-\uDE8B]/
+);
+
+/**
+ * Matches a string of non-special characters.
+ */
 const reMain = /^[^\n`\[\]\\!<&*_'"]+/m;
+const REGEX_SPECIAL_CHARS = '.+*?^$()[]{}|\\';
+const REGEX_CHAR_ESCAPE = '\\';
+
+/**
+ * 
+ * @param chars Characters to be excluded in regex square brackets escape form.
+ * @param raw `true` if `chars` is not processed to escape form (e.g. `.|$`), `false` if 
+ * otherwise (e.g. `\\.\\|\\$`). Default to `false`.
+ * @returns 
+ */
+export const compileNonSpecialCharRegExp = (chars: string, raw?: boolean) => {
+  if (raw) {
+    let chars2 = '';
+    for (const char of chars)
+      chars2 += REGEX_SPECIAL_CHARS.indexOf(char) >= 0 ? (REGEX_CHAR_ESCAPE + char) : char;
+    chars = chars2;
+  }
+  return new RegExp(`^[^\\n\`\\[\\]\\\\!<&*_\'"${chars}]+`);
+};
+
+// Definitions
+
+/**
+ * 
+ * Try to match something at the current position in the subject. 
+ * Called in the corresponding character is triggered.
+ * 
+ * If the matching is succeeded, further processions, like
+ * appending a new node calling `block.appendChild(...)` is handled 
+ * inside the function.
+ * @return A boolean value indicating if it succeed in matching anything.
+ * 
+ * If `true` is returned, The inline parser will do nothing; If `false` is 
+ * returned, it will consider the current character as a `text` node.
+ */
+export type InlineHandler<T extends NodeType> = (parser: InlineParser<T>, block: Node<T>) => boolean;
 
 
-export interface InlineParserOptions {
-  smart?: boolean
+export interface InlineParserOptions<T extends NodeType> {
+  smart?: boolean;
+
+  reNonSpecialChars?: RegExp;
+  reDelimiterPunctuation?: RegExp;
+  reDelimiterWhiteSpace?: RegExp;
+
+  inlineHandlers?: [string, InlineHandler<T>][];
 }
 
 export interface Delimiters<T extends NodeType> {
@@ -124,15 +169,19 @@ export type RefMap = Record<string, {
 
 
 
-const text = <T extends NodeType>(s: string) => {
+const createTextnode = <T extends NodeType>(literal: string) => {
   const node = new Node<GeneralNodeType>('text') as Node<T>;
-  node._literal = s;
+  node._literal = literal;
   return node;
 };
 
-// normalize a reference in reference link (remove []s, trim,
-// collapse internal space, unicode case fold.
-// See commonmark/commonmark.js#168.
+/**
+ * normalize a reference in reference link (remove []s, trim,
+ * collapse internal space, unicode case fold.
+ * See commonmark/commonmark.js#168.
+ * @param str 
+ * @returns 
+ */
 const normalizeReference = (str: string) => {
   return str
     .slice(1, str.length - 1)
@@ -156,15 +205,40 @@ const removeDelimitersBetween = <T extends NodeType>(bottom: Delimiters<T>, top:
  */
 export class InlineParser<T extends NodeType> {
 
-  options: InlineParserOptions;
+  readonly options: InlineParserOptions<T>;
+  readonly withDefinedRules: boolean;
+
   subject: string;
   delimiters?: Delimiters<T>;
   brackets?: Brackets<T>;
   pos: number;
   refmap: RefMap;
 
-  constructor(options?: InlineParserOptions) {
+  constructor(options?: InlineParserOptions<T>) {
+    // parse options
     this.options = Object.assign({}, options);
+
+    this.options.reDelimiterPunctuation = this.options.reDelimiterPunctuation ?? rePunctuation;
+    this.options.reDelimiterWhiteSpace = this.options.reDelimiterWhiteSpace ?? reUnicodeWhitespaceChar;
+
+    this.options.inlineHandlers = [...this.options.inlineHandlers ?? []];
+    for (const [c] of this.options.inlineHandlers)
+      if (c.length !== 1)
+        throw 'Invalid triggering character(s): ' + JSON.stringify(c);
+
+    this.withDefinedRules = this.options.inlineHandlers.length !== 0;
+    
+    if (this.options.reNonSpecialChars === undefined) {
+      if (!this.withDefinedRules)
+        this.options.reNonSpecialChars = reMain;
+      else {
+        this.options.reNonSpecialChars = compileNonSpecialCharRegExp(
+          this.options.inlineHandlers.map(x => x[0]).join(''), 
+          true
+        );
+      }
+    }
+
     this.subject = '';
     this.pos = 0;
     this.refmap = {};
@@ -199,18 +273,21 @@ export class InlineParser<T extends NodeType> {
     }
   }
 
-  // Parse zero or more space characters, including at most one newline
+  /**
+   * Parse zero or more space characters, including at most one newline
+   * @returns 
+   */
   spnl() {
     this.match(reSpnl);
     return true;
   }
 
-  // All of the parsers below try to match something at the current position
-  // in the subject.  If they succeed in matching anything, they
-  // return the inline matched, advancing the subject.
-
-  // Attempt to parse backticks, adding either a backtick code span or a
-  // literal sequence of backticks.
+  /**
+   * Attempt to parse backticks, adding either a backtick code span or a
+   * literal sequence of backticks.
+   * @param block 
+   * @returns 
+   */
   parseBackticks(block: Node<T>) {
     const ticks = this.match(reTicksHere);
     if (ticks === undefined) {
@@ -241,14 +318,18 @@ export class InlineParser<T extends NodeType> {
     }
     // If we got here, we didn't match a closing backtick sequence.
     this.pos = afterOpenTicks;
-    block.appendChild(text(ticks));
+    block.appendChild(createTextnode(ticks));
     return true;
   }
 
-  // Parse a backslash-escaped special character, adding either the escaped
-  // character, a hard line break (if the backslash is followed by a newline),
-  // or a literal backslash to the block's children.  Assumes current character
-  // is a backslash.
+  /**
+   * Parse a backslash-escaped special character, adding either the escaped
+   * character, a hard line break (if the backslash is followed by a newline),
+   * or a literal backslash to the block's children.  Assumes current character
+   * is a backslash.
+   * @param block 
+   * @returns 
+   */
   parseBackslash(block: Node<T>) {
     const subj = this.subject;
     let node;
@@ -258,15 +339,19 @@ export class InlineParser<T extends NodeType> {
       node = new Node('linebreak' as T);
       block.appendChild(node);
     } else if (reEscapable.test(subj.charAt(this.pos))) {
-      block.appendChild(text(subj.charAt(this.pos)));
+      block.appendChild(createTextnode(subj.charAt(this.pos)));
       this.pos += 1;
     } else {
-      block.appendChild(text('\\'));
+      block.appendChild(createTextnode('\\'));
     }
     return true;
   }
 
-  // Attempt to parse an autolink (URL or email in pointy brackets).
+  /**
+   * Attempt to parse an autolink (URL or email in pointy brackets).
+   * @param block 
+   * @returns 
+   */
   parseAutolink(block: Node<T>) {
     let m;
     let dest;
@@ -276,7 +361,7 @@ export class InlineParser<T extends NodeType> {
       node = new Node('link' as T);
       node._destination = normalizeURI('mailto:' + dest);
       node._title = '';
-      node.appendChild(text(dest));
+      node.appendChild(createTextnode(dest));
       block.appendChild(node);
       return true;
     } else if ((m = this.match(reAutolink))) {
@@ -284,7 +369,7 @@ export class InlineParser<T extends NodeType> {
       node = new Node('link' as T);
       node._destination = normalizeURI(dest);
       node._title = '';
-      node.appendChild(text(dest));
+      node.appendChild(createTextnode(dest));
       block.appendChild(node);
       return true;
     } else {
@@ -393,7 +478,7 @@ export class InlineParser<T extends NodeType> {
     } else {
       contents = this.subject.slice(startpos, this.pos);
     }
-    const node = text<T>(contents);
+    const node = createTextnode<T>(contents);
     block.appendChild(node);
 
     // Add entry to stack for this opener
@@ -579,8 +664,11 @@ export class InlineParser<T extends NodeType> {
     }
   }
 
-  // Attempt to parse link title (sans quotes), returning the string
-  // or undefined if no match.
+  /**
+   * Attempt to parse link title (sans quotes), returning the string
+   * or undefined if no match.
+   * @returns 
+   */
   parseLinkTitle() {
     const title = this.match(reLinkTitle);
     if (title === undefined) {
@@ -591,8 +679,9 @@ export class InlineParser<T extends NodeType> {
     }
   }
 
-  // Attempt to parse link destination, returning the string or
-  // undefined if no match.
+  /**
+   * Attempt to parse link destination, returning the string or
+   * undefined if no match. */
   parseLinkDestination() {
     let res = this.match(reLinkDestinationBraces);
     if (res === undefined) {
@@ -657,7 +746,7 @@ export class InlineParser<T extends NodeType> {
     const startpos = this.pos;
     this.pos += 1;
 
-    const node = text<T>('[');
+    const node = createTextnode<T>('[');
     block.appendChild(node);
 
     // Add entry to stack for this opener
@@ -673,13 +762,13 @@ export class InlineParser<T extends NodeType> {
     if (this.peek() === C_OPEN_BRACKET) {
       this.pos += 1;
 
-      const node = text<T>('![');
+      const node = createTextnode<T>('![');
       block.appendChild(node);
 
       // Add entry to stack for this opener
       this.addBracket(node, startpos + 1, true);
     } else {
-      block.appendChild(text('!'));
+      block.appendChild(createTextnode('!'));
     }
     return true;
   }
@@ -707,13 +796,13 @@ export class InlineParser<T extends NodeType> {
 
     if (opener === undefined) {
       // no matched opener, just return a literal
-      block.appendChild(text(']'));
+      block.appendChild(createTextnode(']'));
       return true;
     }
 
     if (!opener.active) {
       // no matched opener, just return a literal
-      block.appendChild(text(']'));
+      block.appendChild(createTextnode(']'));
       // take opener off brackets stack
       this.removeBracket();
       return true;
@@ -812,7 +901,7 @@ export class InlineParser<T extends NodeType> {
 
       this.removeBracket(); // remove this opener from stack
       this.pos = startpos;
-      block.appendChild(text(']'));
+      block.appendChild(createTextnode(']'));
       return true;
     }
   }
@@ -843,7 +932,7 @@ export class InlineParser<T extends NodeType> {
   parseEntity(block: Node<T>) {
     let m;
     if ((m = this.match(reEntityHere))) {
-      block.appendChild(text(decodeHTML(m)));
+      block.appendChild(createTextnode(decodeHTML(m)));
       return true;
     } else {
       return false;
@@ -861,7 +950,7 @@ export class InlineParser<T extends NodeType> {
     if ((m = this.match(reMain))) {
       if (this.options.smart) {
         block.appendChild(
-          text(
+          createTextnode(
             m
               .replace(reEllipses, '\u2026')
               .replace(reDash, function (chars) {
@@ -890,7 +979,7 @@ export class InlineParser<T extends NodeType> {
           )
         );
       } else {
-        block.appendChild(text(m));
+        block.appendChild(createTextnode(m));
       }
       return true;
     } else {
@@ -1058,12 +1147,24 @@ export class InlineParser<T extends NodeType> {
       res = this.parseEntity(block);
       break;
     default:
-      res = this.parseString(block);
+      if (this.withDefinedRules) {
+        let handled = false;
+        for (const [ch, handler] of this.options.inlineHandlers ?? []) {
+          if (c === ch.charCodeAt(0)) {
+            res = handler(this, block);
+            handled = true;
+            break;
+          }
+        }
+        if (!handled)
+          res = this.parseString(block);
+      } else
+        res = this.parseString(block);
       break;
     }
     if (!res) {
       this.pos += 1;
-      block.appendChild(text(fromCodePoint(c)));
+      block.appendChild(createTextnode(fromCodePoint(c)));
     }
 
     return true;

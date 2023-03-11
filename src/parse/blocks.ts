@@ -665,13 +665,13 @@ const listsMatch = (list_data: ListData, item_data: ListData) => {
 };
 
 
-export interface BlockParserOptions<T extends NodeType = GeneralNodeType> extends InlineParserOptions {
+export interface BlockParserOptions<T extends NodeType = GeneralNodeType> extends InlineParserOptions<T> {
   time?: boolean;
-  handlers?: Record<T, BlockHandler<T> | undefined>;
+  blockHandlers?: Record<T, BlockHandler<T> | undefined>;
   /**
    * The less the index, the higher the hierarchy.
    */
-  startHandlers?: BlockStartsHandler<T>[];
+  blockStartHandlers?: BlockStartsHandler<T>[];
 }
 
 export class BlockParser<T extends NodeType = GeneralNodeType> {
@@ -703,8 +703,8 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
   constructor(options?: BlockParserOptions<T>) {
 
     this.options = Object.assign({}, options);
-    this.blocks = this.options.handlers ?? (Object.assign({}, defaultBlocks) as Record<T, BlockHandler<T> | undefined>);
-    this.blockStarts = this.options.startHandlers ?? ([...defaultBlockStarts as unknown as BlockStartsHandler<T>[]]);
+    this.blocks = this.options.blockHandlers ?? (Object.assign({}, defaultBlocks) as Record<T, BlockHandler<T> | undefined>);
+    this.blockStarts = this.options.blockStartHandlers ?? ([...defaultBlockStarts as unknown as BlockStartsHandler<T>[]]);
     this.inlineParser = new InlineParser(options);
 
     this.doc = newDocument();
@@ -1050,7 +1050,6 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
     let node, event, t;
     const walker = new NodeWalker(block);
     this.inlineParser.refmap = this.refmap;
-    this.inlineParser.options = this.options;
     while ((event = walker.next())) {
       node = event.node;
       t = node.type;

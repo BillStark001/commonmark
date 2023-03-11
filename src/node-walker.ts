@@ -1,4 +1,4 @@
-import { generalIsContainer, Node, NodeType } from './node';
+import { GeneralNodeTypeDefinition, Node, NodeType, NodeTypeDefinition } from './node';
 
 /* Example of use of walker:
 
@@ -18,6 +18,8 @@ export type NodeWalkerEvent<T extends NodeType> = {
 
 export class NodeWalker<T extends NodeType> {
 
+  readonly definition: NodeTypeDefinition<T>;
+
   private _current?: Node<T>;
   private _root: Node<T>;
   private _entering: boolean;
@@ -26,7 +28,9 @@ export class NodeWalker<T extends NodeType> {
   public get root() { return this._root; }
   public get entering() { return this._entering; }
 
-  constructor(root: Node<T>) {
+  constructor(root: Node<T>, definition?: NodeTypeDefinition<T>) {
+    this.definition = Object.assign({}, GeneralNodeTypeDefinition, definition);
+
     this._current = root;
     this._root = root;
     this._entering = true;
@@ -45,7 +49,8 @@ export class NodeWalker<T extends NodeType> {
       return undefined;
     }
 
-    const container = generalIsContainer(cur);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const container = this.definition.isContainer!(cur);
 
     if (entering && container) {
       if (cur.firstChild) {

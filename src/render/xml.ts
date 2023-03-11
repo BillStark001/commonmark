@@ -49,7 +49,7 @@ export class XmlRenderer<T extends NodeType = GeneralNodeType> extends Renderer<
 
     let attrs: [string, string][];
     let tagname;
-    const walker = new NodeWalker(ast);
+    const walker = new NodeWalker(ast, this.options.type);
     let event, node, entering;
     let container;
     let selfClosing;
