@@ -153,12 +153,11 @@ export type BlockHandler<T extends NodeType> = {
  */
 export type BlockStartsHandler<T extends NodeType> = (parser: BlockParser<T>, container: Node<T>) => 0 | 1 | 2;
 
-/*
-export type BlockStartsTrigger<T extends NodeType> = (parser: BlockParser<T>) => boolean;
-export type BlockStartsTriggerExpr<T extends NodeType> = (parser: BlockParser<T>) => [false, null] | [true, RegExpMatchArray];
+export type BlockStartsTrigger = <T extends NodeType>(parser: BlockParser<T>, container: Node<T>) => boolean;
+export type BlockStartsTriggerExpr = <T extends NodeType>(parser: BlockParser<T>, container: Node<T>) => [false, null] | [true, RegExpMatchArray];
 
-export const compileBlockStartsTriggerWithRegex = <T extends NodeType = GeneralNodeType>(re: RegExp) => {
-  const ret: BlockStartsTriggerExpr<T> = (parser) => {
+export const compileBlockStartsTriggerWithRegex = (re: RegExp) => {
+  const ret: BlockStartsTriggerExpr = (parser) => {
     if (parser.indented)
       return [false, null];
     const match = parser.currentLine
@@ -171,8 +170,8 @@ export const compileBlockStartsTriggerWithRegex = <T extends NodeType = GeneralN
   return ret;
 };
 
-export const compileBlockStartsTriggerWithChar = <T extends NodeType = GeneralNodeType>(c: number) => {
-  const ret: BlockStartsTrigger<T> = (parser) =>
+export const compileBlockStartsTriggerWithChar = (c: number) => {
+  const ret: BlockStartsTrigger = (parser) =>
     !parser.indented && peek(parser.currentLine, parser.nextNonspace) === c;
   return ret;
 };
@@ -181,7 +180,39 @@ const isBlockQuoteStart = compileBlockStartsTriggerWithChar(C_GREATERTHAN);
 const isAtxHeading = compileBlockStartsTriggerWithRegex(reATXHeadingMarker);
 const isFencedCodeBlock = compileBlockStartsTriggerWithRegex(reCodeFence);
 const isHtmlBlock = compileBlockStartsTriggerWithChar(C_LESSTHAN);
-*/
+const _isSetextHeading = compileBlockStartsTriggerWithRegex(reSetextHeadingLine);
+const isSetextHeading: BlockStartsTriggerExpr = (parser, container) => container.type === 'paragraph' ? _isSetextHeading(parser as unknown as BlockParser<NodeType>, container) : [false, null];
+const isThematicBreak = compileBlockStartsTriggerWithRegex(reThematicBreak);
+const isListItem: BlockStartsTrigger = <T extends NodeType>(parser: BlockParser<T>, container: Node<T>) => {
+  return (!parser.indented || container.type === 'list' ) && parseListMarker(parser, container) !== undefined;
+};
+const isIndentedCodeBlock: BlockStartsTrigger = (parser) => {
+  return parser.indented && parser.tip.type !== 'paragraph' && !parser.blank;
+};
+
+const isTopLevelStarting: BlockStartsTrigger = (parser, container) => {
+  return isBlockQuoteStart(parser, container)
+    || isAtxHeading(parser, container)[0]
+    || isFencedCodeBlock(parser, container)[0]
+    || isHtmlBlock(parser, container)
+    || isSetextHeading(parser, container)[0]
+    || isThematicBreak(parser, container)[0]
+    || isListItem(parser, container) 
+    || isIndentedCodeBlock(parser, container);
+};
+
+export const Conditions = {
+  isBlockQuoteStart: isBlockQuoteStart, 
+  isAtxHeading: isAtxHeading, 
+  isFencedCodeBlock: isFencedCodeBlock, 
+  isHtmlBlock: isHtmlBlock,
+  isSetextHeading: isSetextHeading, 
+  isThematicBreak: isThematicBreak,
+  isListItem: isListItem, 
+  isIndentedCodeBlock: isIndentedCodeBlock,
+
+  isTopLevelStarting: isTopLevelStarting,
+};
 
 const defaultBlockStarts: BlockStartsHandler<GeneralNodeType>[] = [
   // block quote
@@ -773,6 +804,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
   oldtip: Node<T>;
   lastLine: string;
   currentLine: string;
+  nextLine: string;
   lineNumber: number;
 
   nextNonspace: number;
@@ -814,6 +846,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
     this.lastMatchedContainer = this.doc;
     this.lastLine = '';
     this.currentLine = '';
+    this.nextLine = '';
     this.nextNonspace = 0;
     this.nextNonspaceColumn = 0;
     this.indent = 0;
@@ -838,6 +871,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
     this.lastMatchedContainer = this.doc;
     this.lastLine = '';
     this.currentLine = '';
+    this.nextLine = '';
   }
 
   /*
@@ -973,7 +1007,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
    * @param ln 
    * @returns 
    */
-  incorporateLine(ln: string) {
+  incorporateLine(ln: string, lnNext: string) {
     let all_matched = true;
     let t: T;
 
@@ -992,6 +1026,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
 
     this.lastLine = this.currentLine;
     this.currentLine = ln;
+    this.nextLine = lnNext ?? '';
 
     // For each containing block, try to parse the associated line start.
     // Bail out on failure: container will point to the last matching block.
@@ -1180,7 +1215,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
       console.time('block parsing');
     }
     for (let i = 0; i < len; i++) {
-      this.incorporateLine(lines[i]);
+      this.incorporateLine(lines[i], lines[i + 1]);
     }
     while (this.tip) {
       this.finalize(this.tip, len);

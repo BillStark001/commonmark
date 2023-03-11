@@ -12,10 +12,52 @@
  * ```
  */
 
-export { Node, NodeType, NodeTypeDefinition, GeneralNodeType, GeneralNodeTypeDefinition, generalIsContainer } from './node';
-export { NodeWalker, NodeWalkerEvent, walkThrough } from './node-walker';
-export { BlockParser, BlockHandler, BlockStartsHandler, BlockParsingOptions, compileMaybeSpecialRegExp } from './parse/blocks';
-export { InlineParser, InlineHandler, InlineParsingOptions, compileNonSpecialCharRegExp } from './parse/inlines';
+export {
+  Node, 
+  NodeType, 
+  NodeTypeDefinition, 
+  GeneralNodeType, 
+  GeneralNodeTypeDefinition, 
+  generalIsContainer
+} from './node';
+
+export {
+  NodeWalker, 
+  NodeWalkerEvent, 
+  walkThrough
+} from './node-walker';
+
+export {
+  BlockParser, 
+  BlockHandler, 
+  BlockStartsHandler, 
+  BlockParsingOptions, 
+  compileMaybeSpecialRegExp
+} from './parse/blocks';
+
+export {
+  InlineParser, 
+  InlineHandler, 
+  InlineParsingOptions, 
+  compileNonSpecialCharRegExp
+} from './parse/inlines';
+
+export {
+  HIERARCHY_HIGHEST_DEFAULT,
+  HIERARCHY_BLOCK_QUOTE, HIERARCHY_ATX_HEADING,
+  HIERARCHY_FENCED_CODE_BLOCK, HIERARCHY_HTML_BLOCK,
+  HIERARCHY_SETEXT_HEADING, HIERARCHY_THEMATIC_BREAK,
+  HIERARCHY_LIST_ITEM, HIERARCHY_INDENTED_CODE_BLOCK,
+  HIERARCHY_LOWEST_DEFAULT
+} from './parse/blocks';
+
+export {
+  compileBlockStartsTriggerWithChar,
+  compileBlockStartsTriggerWithRegex,
+  Conditions as StartingConditions
+} from './parse/blocks';
+
+export * as common from './common';
 
 export { Renderer } from './render/renderer';
 export { HtmlRenderer, HtmlRenderingOptions } from './render/html';
