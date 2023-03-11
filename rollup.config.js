@@ -7,14 +7,10 @@ const dts = require('rollup-plugin-dts').default;
 const del = require('rollup-plugin-delete');
 const { version } = require('./package.json');
 
-// import { version } from './package.json';
-
 var banner =
     '/* commonmark ' +
     version +
     ' https://github.com/commonmark/commonmark.js @license BSD3 */';
-
-console.log(terser, dts, del);
 
 exports.default = [
   {
@@ -26,10 +22,7 @@ exports.default = [
       banner: banner,
       sourcemap: true,
     },
-    plugins: [
-      resolve(),
-      commonjs(),
-    ],
+    plugins: [resolve(), commonjs()],
   },
   {
     input: 'dist/src/index.js',
@@ -40,11 +33,7 @@ exports.default = [
       banner: banner,
       sourcemap: true,
     },
-    plugins: [
-      resolve(),
-      commonjs(),
-      terser(),
-    ],
+    plugins: [resolve(), commonjs(), terser()],
   },
   {
     input: 'dist/src/index.d.ts',
@@ -57,7 +46,7 @@ exports.default = [
       del({
         targets: ['dist/*/'],
         hook: 'buildEnd',
-      })
+      }),
     ],
   },
 ];

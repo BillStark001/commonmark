@@ -5,8 +5,6 @@ import * as commonmark from '../dist/commonmark';
 
 // Definitions
 
-
-
 interface Example {
   number: number;
   section: string;
@@ -45,8 +43,7 @@ interface TestCase {
 
 type Converter = (inStr: string) => string;
 
-// Home made mini-version of the npm ansi module:
-
+// Utility functions
 
 const repeat = function (pattern: string, count: number) {
   if (count < 1) {
@@ -71,6 +68,8 @@ const escSeq = function (s: string): CursorColor {
   };
 };
 
+
+// Home made mini-version of the npm ansi module
 const cursor: Cursor = {
   write: function (s: string) {
     process.stdout.write(s);
@@ -96,6 +95,8 @@ const showSpaces = function (s: string) {
   const t = s;
   return t.replace(/\t/g, '→').replace(/ /g, '␣');
 };
+
+// Test functions
 
 const extractSpecTests = function (testfile: string) {
   const data = fs.readFileSync(testfile, 'utf8');
@@ -205,24 +206,26 @@ const pathologicalTest = function (testcase: TestCase, res: Result, converter: C
   console.timeEnd('  elapsed time');
 };
 
-const parse_and_render = function (z: string) {
+const parseAndRender = function (z: string) {
   const ast = reader.parse(z);
   return writer.render(ast);
 };
 
-const parse_and_render_smart = function (z: string) {
+const parseAndRenderSmart = function (z: string) {
   const ast = readerSmart.parse(z);
   return writer.render(ast);
 };
 
-specTests('test/spec.txt', results, parse_and_render);
+specTests('test/spec.txt', results, parseAndRender);
 
-specTests('test/smart_punct.txt', results, parse_and_render_smart);
+specTests('test/smart_punct.txt', results, parseAndRenderSmart);
 
-specTests('test/regression.txt', results, parse_and_render);
+specTests('test/regression.txt', results, parseAndRender);
 
-// pathological cases
+// Pathological cases
 cursor.write('Pathological cases:\n');
+
+// Constructing cases
 
 const cases: TestCase[] = [
   {
@@ -357,8 +360,10 @@ for (x = 1000; x <= 10000; x *= 10) {
 
 
 for (let j = 0; j < cases.length; j++) {
-  pathologicalTest(cases[j], results, parse_and_render);
+  pathologicalTest(cases[j], results, parseAndRender);
 }
+
+// Result
 
 cursor.write('\n');
 
