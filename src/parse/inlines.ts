@@ -3,6 +3,7 @@ import * as common from '../common';
 import fromCodePoint from '../from-code-point';
 import { decodeHTML } from 'entities';
 import 'string.prototype.repeat'; // Polyfill for String.prototype.repeat
+import { escapeForRegExp } from '../common';
 
 const normalizeURI = common.normalizeURI;
 const unescapeString = common.unescapeString;
@@ -93,8 +94,7 @@ const rePunctuation = new RegExp(
  * Matches a string of non-special characters.
  */
 const reMain = /^[^\n`\[\]\\!<&*_'"]+/m;
-const REGEX_SPECIAL_CHARS = '.+*?^$()[]{}|\\';
-const REGEX_CHAR_ESCAPE = '\\';
+
 
 /**
  * 
@@ -105,10 +105,7 @@ const REGEX_CHAR_ESCAPE = '\\';
  */
 export const compileNonSpecialCharRegExp = (chars: string, raw?: boolean) => {
   if (raw) {
-    let chars2 = '';
-    for (const char of chars)
-      chars2 += REGEX_SPECIAL_CHARS.indexOf(char) >= 0 ? (REGEX_CHAR_ESCAPE + char) : char;
-    chars = chars2;
+    chars = escapeForRegExp(chars);
   }
   return new RegExp(`^[^\\n\`\\[\\]\\\\!<&*_\'"${chars}]+`);
 };

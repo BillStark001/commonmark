@@ -216,16 +216,8 @@ const parseAndRenderSmart = function (z: string) {
   return writer.render(ast);
 };
 
-specTests('test/spec.txt', results, parseAndRender);
 
-specTests('test/smart_punct.txt', results, parseAndRenderSmart);
-
-specTests('test/regression.txt', results, parseAndRender);
-
-// Pathological cases
-cursor.write('Pathological cases:\n');
-
-// Constructing cases
+// Constructing pathological test cases
 
 const cases: TestCase[] = [
   {
@@ -350,13 +342,24 @@ for (x = 10; x <= 1000; x *= 10) {
 }
 
 // Commented out til we have a fix... see #129
-for (x = 1000; x <= 10000; x *= 10) {
+for (x = 10; x <= 1000; x *= 10) {
   cases.push(
     { name: '[]( ' + x + ' deep',
       input: repeat('[](', x) + '\n',
       expected: '<p>' + repeat('[](', x) + '</p>\n'
     });
 }
+
+console.time('Total elapsed time');
+
+specTests('test/spec.txt', results, parseAndRender);
+
+specTests('test/smart_punct.txt', results, parseAndRenderSmart);
+
+specTests('test/regression.txt', results, parseAndRender);
+
+// Pathological cases
+cursor.write('Pathological cases:\n');
 
 
 for (let j = 0; j < cases.length; j++) {
@@ -373,5 +376,7 @@ cursor.write(
   results.failed.toString() +
   ' failed.\n'
 );
+
+console.timeEnd('Total elapsed time');
 
 process.exit(results.failed);

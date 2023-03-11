@@ -1,5 +1,5 @@
 import Node, { GeneralNodeType, ListData, NodeType } from '../node.js';
-import { unescapeString, OPENTAG, CLOSETAG } from '../common.js';
+import { unescapeString, OPENTAG, CLOSETAG, escapeForRegExp } from '../common.js';
 import InlineParser, { InlineParsingOptions as InlineParsingOptions, RefMap } from './inlines.js';
 import { NodeWalker } from '../node-walker.js';
 
@@ -36,8 +36,6 @@ const reHtmlBlockClose = [
 
 const reThematicBreak = /^(?:\*[ \t]*){3,}$|^(?:_[ \t]*){3,}$|^(?:-[ \t]*){3,}$/;
 
-const reMaybeSpecial = /^[#`~*+_=<>0-9-]/;
-
 const reNonSpace = /[^ \t\f\v\r\n]/;
 
 const reBulletListMarker = /^[*+-]/;
@@ -53,6 +51,29 @@ const reClosingCodeFence = /^(?:`{3,}|~{3,})(?=[ \t]*$)/;
 const reSetextHeadingLine = /^(?:=+|-+)[ \t]*$/;
 
 const reLineEnding = /\r\n|\n|\r/;
+
+// Speed optimization
+
+const reMaybeSpecial = /^[#`~*+_=<>0-9-]/;
+
+/**
+ * 
+ * @param charsStart Characters to be excluded in regex square brackets escape form.
+ * @param raw `true` if `chars` is not processed to escape form (e.g. `.|$`), `false` if 
+ * otherwise (e.g. `\\.\\|\\$`). Default to `false`.
+ * @returns 
+ */
+export const compileMaybeSpecialRegExp = (charsStart: string, charsInTheMiddle: string, raw?: boolean) => {
+  if (raw) {
+    charsStart = escapeForRegExp(charsStart);
+    charsInTheMiddle = escapeForRegExp(charsInTheMiddle);
+  }
+  if (charsInTheMiddle !== '') {
+    return new RegExp(`(?:^[#\`~*+_=<>${charsStart}0-9-])|[${charsInTheMiddle}]`);
+  }
+  return new RegExp(`^[#\`~*+_=<>${charsStart}0-9-]`);
+};
+
 
 // Tool functions
 
@@ -131,6 +152,36 @@ export type BlockHandler<T extends NodeType> = {
  * 2 = matched leaf, no more block starts
  */
 export type BlockStartsHandler<T extends NodeType> = (parser: BlockParser<T>, container: Node<T>) => 0 | 1 | 2;
+
+/*
+export type BlockStartsTrigger<T extends NodeType> = (parser: BlockParser<T>) => boolean;
+export type BlockStartsTriggerExpr<T extends NodeType> = (parser: BlockParser<T>) => [false, null] | [true, RegExpMatchArray];
+
+export const compileBlockStartsTriggerWithRegex = <T extends NodeType = GeneralNodeType>(re: RegExp) => {
+  const ret: BlockStartsTriggerExpr<T> = (parser) => {
+    if (parser.indented)
+      return [false, null];
+    const match = parser.currentLine
+      .slice(parser.nextNonspace)
+      .match(re);
+    if (match === null)
+      return [false, null];
+    return [true, match];
+  };
+  return ret;
+};
+
+export const compileBlockStartsTriggerWithChar = <T extends NodeType = GeneralNodeType>(c: number) => {
+  const ret: BlockStartsTrigger<T> = (parser) =>
+    !parser.indented && peek(parser.currentLine, parser.nextNonspace) === c;
+  return ret;
+};
+
+const isBlockQuoteStart = compileBlockStartsTriggerWithChar(C_GREATERTHAN);
+const isAtxHeading = compileBlockStartsTriggerWithRegex(reATXHeadingMarker);
+const isFencedCodeBlock = compileBlockStartsTriggerWithRegex(reCodeFence);
+const isHtmlBlock = compileBlockStartsTriggerWithChar(C_LESSTHAN);
+*/
 
 const defaultBlockStarts: BlockStartsHandler<GeneralNodeType>[] = [
   // block quote
@@ -667,11 +718,12 @@ const listsMatch = (list_data: ListData, item_data: ListData) => {
 
 export interface BlockParsingOptions<T extends NodeType = GeneralNodeType> extends InlineParsingOptions<T> {
   time?: boolean;
-  blockHandlers?: Record<T, BlockHandler<T> | undefined>;
+  blockHandlers?: Partial<Record<T, BlockHandler<T> | undefined>>;
   /**
    * The less the index, the higher the hierarchy.
    */
   blockStartHandlers?: Record<number, BlockStartsHandler<T>[]>;
+  reMaybeSpecial?: RegExp;
 }
 
 const defaultBlockStartsIndex = Object.assign({}, defaultBlockStarts.map(() => []));
@@ -698,7 +750,7 @@ export const HIERARCHY_LOWEST_DEFAULT = 8;
 export const extendBlockStartsHandlers = <T extends NodeType>(handlers: Record<number, BlockStartsHandler<T>[]>) => {
   const res: BlockStartsHandler<T>[] = [];
   const newHandlers = Object.assign({}, defaultBlockStartsIndex, handlers);
-  const hierarchyList = Object.keys(handlers)
+  const hierarchyList = Object.keys(newHandlers)
     .sort((x, y) => Number(x) - Number(y));
   for (const h of hierarchyList) {
     res.push(...newHandlers[h as unknown as number]);
@@ -719,6 +771,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
   doc: Node<T>;
   tip: Node<T>;
   oldtip: Node<T>;
+  lastLine: string;
   currentLine: string;
   lineNumber: number;
 
@@ -747,6 +800,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
       defaultBlockStarts as unknown as BlockStartsHandler<T>[] : 
       extendBlockStartsHandlers(this.options.blockStartHandlers);
     this.inlineParser = new InlineParser(this.options, true);
+    this.options.reMaybeSpecial = this.options.reMaybeSpecial ?? reMaybeSpecial;
 
     this.doc = newDocument();
 
@@ -758,6 +812,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
     this.offset = 0;
     this.column = 0;
     this.lastMatchedContainer = this.doc;
+    this.lastLine = '';
     this.currentLine = '';
     this.nextNonspace = 0;
     this.nextNonspaceColumn = 0;
@@ -781,9 +836,16 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
     this.offset = 0;
     this.column = 0;
     this.lastMatchedContainer = this.doc;
+    this.lastLine = '';
     this.currentLine = '';
   }
 
+  /*
+  peekNextLine(offset?: number) {
+    offset = offset ?? 1;
+    return
+  }
+  */
 
   /**
    * Add a line to the block at the tip.  
@@ -928,6 +990,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
       ln = ln.replace(/\0/g, '\uFFFD');
     }
 
+    this.lastLine = this.currentLine;
     this.currentLine = ln;
 
     // For each containing block, try to parse the associated line start.
@@ -969,7 +1032,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
       // this is a little performance optimization:
       if (
         !this.indented &&
-        !reMaybeSpecial.test(ln.slice(this.nextNonspace))
+        !this.options.reMaybeSpecial?.test(ln.slice(this.nextNonspace))
       ) {
         this.advanceNextNonspace();
         break;

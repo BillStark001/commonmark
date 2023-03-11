@@ -52,6 +52,16 @@ const XMLSPECIAL = '[&<>"]';
 
 const reXmlSpecial = new RegExp(XMLSPECIAL, 'g');
 
+const REGEX_SPECIAL_CHARS = '.+*?^$()[]{}|\\';
+const REGEX_CHAR_ESCAPE = '\\';
+
+const escapeForRegExp = (chars: string) => {
+  let chars2 = '';
+  for (const char of chars)
+    chars2 += REGEX_SPECIAL_CHARS.indexOf(char) >= 0 ? (REGEX_CHAR_ESCAPE + char) : char;
+  return chars2;
+};
+
 const unescapeChar = function (s: string) {
   if (s.charCodeAt(0) === C_BACKSLASH) {
     return s.charAt(1);
@@ -101,6 +111,7 @@ const escapeXml = function (s: string) {
 };
 
 export {
+  escapeForRegExp, 
   unescapeString,
   normalizeURI,
   escapeXml,
