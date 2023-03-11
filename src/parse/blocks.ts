@@ -1,4 +1,4 @@
-import Node, { ListData, NodeType } from '../node.js';
+import Node, { GeneralNodeType, ListData, NodeType } from '../node.js';
 import { unescapeString, OPENTAG, CLOSETAG } from '../common.js';
 import InlineParser, { InlineParserOptions, RefMap } from './inlines.js';
 import { NodeWalker } from '../node-walker.js';
@@ -56,8 +56,8 @@ const reLineEnding = /\r\n|\n|\r/;
 
 // Tool functions
 
-const newDocument = function () {
-  const doc = new Node('document', [
+const newDocument = function <T extends NodeType>() {
+  const doc = new Node('document' as T, [
     [1, 1],
     [0, 0]
   ]);
@@ -83,7 +83,7 @@ const peek = (ln: string, pos: number) => {
 
 // Returns true if block ends with a blank line, descending if needed
 // into lists and sublists.
-const endsWithBlankLine = (block?: Node) => {
+const endsWithBlankLine = <T extends NodeType>(block?: Node<T>) => {
   while (block) {
     if (block._lastLineBlank) {
       return true;
@@ -100,7 +100,7 @@ const endsWithBlankLine = (block?: Node) => {
   return false;
 };
 
-export type BlockHandler = {
+export type BlockHandler<T extends NodeType> = {
   /**
    * Run to check whether the block is continuing
    * at a certain line and offset (e.g. whether a block quote
@@ -110,14 +110,14 @@ export type BlockHandler = {
    * @returns 0 for matched, 1 for not matched,
    * and 2 for "we've dealt with this line completely, go to next."
    */
-  continue: (parser: BlockParser, block: Node) => 0 | 1 | 2;
+  continue: (parser: BlockParser<T>, block: Node<T>) => 0 | 1 | 2;
   /**
    * Run when the block is closed.
    * @param parser 
    * @param block 
    */
-  finalize: (parser: BlockParser, block: Node) => void;
-  canContain: (t: NodeType) => boolean;
+  finalize: (parser: BlockParser<T>, block: Node<T>) => void;
+  canContain: (t: T) => boolean;
   acceptsLines: boolean;
 }
 
@@ -130,9 +130,9 @@ export type BlockHandler = {
  * 
  * 2 = matched leaf, no more block starts
  */
-export type BlockStartsHandler = (parser: BlockParser, container: Node) => 0 | 1 | 2;
+export type BlockStartsHandler<T extends NodeType> = (parser: BlockParser<T>, container: Node<T>) => 0 | 1 | 2;
 
-const blockStarts: BlockStartsHandler[] = [
+const defaultBlockStarts: BlockStartsHandler<GeneralNodeType>[] = [
   // block quote
   function (parser) {
     if (
@@ -345,7 +345,7 @@ const blockStarts: BlockStartsHandler[] = [
   }
 ];
 
-const blocks: Record<NodeType, BlockHandler | undefined> = {
+const defaultBlocks: Record<GeneralNodeType, BlockHandler<GeneralNodeType> | undefined> = {
   document: {
     continue: function () {
       return 0;
@@ -582,20 +582,14 @@ const blocks: Record<NodeType, BlockHandler | undefined> = {
   link: undefined,
   image: undefined,
   code: undefined,
-  custom_inline: undefined,
-  custom_block: undefined
 };
 
 
-// DOC PARSER
 
-export interface BlockParserOptions extends InlineParserOptions {
-  time?: boolean
-}
-
-// Parse a list marker and return data on the marker (type,
-// start, delimiter, bullet character, padding) or undefined.
-const parseListMarker = (parser: BlockParser, container: Node) => {
+/** Parse a list marker and return data on the marker (type,
+ * start, delimiter, bullet character, padding) or undefined.
+ */
+const parseListMarker = <T extends NodeType>(parser: BlockParser<T>, container: Node<T>) => {
   const rest = parser.currentLine.slice(parser.nextNonspace);
   const data: ListData = {
     tight: true, // lists are tight by default
@@ -671,17 +665,25 @@ const listsMatch = (list_data: ListData, item_data: ListData) => {
 };
 
 
+export interface BlockParserOptions<T extends NodeType = GeneralNodeType> extends InlineParserOptions {
+  time?: boolean;
+  handlers?: Record<T, BlockHandler<T> | undefined>;
+  /**
+   * The less the index, the higher the hierarchy.
+   */
+  startHandlers?: BlockStartsHandler<T>[];
+}
 
-export class BlockParser {
+export class BlockParser<T extends NodeType = GeneralNodeType> {
 
-  readonly options: BlockParserOptions;
-  readonly inlineParser: InlineParser;
+  readonly options: BlockParserOptions<T>;
+  readonly inlineParser: InlineParser<T>;
+  readonly blocks: Record<T, BlockHandler<T> | undefined>;
+  readonly blockStarts: BlockStartsHandler<T>[];
 
-  doc: Node;
-  blocks: Record<NodeType, BlockHandler | undefined>;
-  blockStarts: BlockStartsHandler[];
-  tip: Node;
-  oldtip: Node;
+  doc: Node<T>;
+  tip: Node<T>;
+  oldtip: Node<T>;
   currentLine: string;
   lineNumber: number;
 
@@ -696,13 +698,13 @@ export class BlockParser {
   lastLineLength: number;
   offset: number;
   column: number;
-  lastMatchedContainer: Node;
+  lastMatchedContainer: Node<T>;
 
-  constructor(options?: BlockParserOptions) {
+  constructor(options?: BlockParserOptions<T>) {
 
     this.options = Object.assign({}, options);
-    this.blocks = Object.assign({}, blocks);
-    this.blockStarts = [...blockStarts];
+    this.blocks = this.options.handlers ?? (Object.assign({}, defaultBlocks) as Record<T, BlockHandler<T> | undefined>);
+    this.blockStarts = this.options.startHandlers ?? ([...defaultBlockStarts as unknown as BlockStartsHandler<T>[]]);
     this.inlineParser = new InlineParser(options);
 
     this.doc = newDocument();
@@ -767,7 +769,7 @@ export class BlockParser {
    * @param offset 
    * @returns 
    */
-  addChild(tag: NodeType, offset: number) {
+  addChild(tag: T, offset: number) {
     while (!this.blocks[this.tip.type]?.canContain(tag)) {
       this.finalize(this.tip, this.lineNumber - 1);
     }
@@ -793,7 +795,7 @@ export class BlockParser {
       while (this.oldtip !== this.lastMatchedContainer) {
         const parent = this.oldtip._parent;
         this.finalize(this.oldtip, this.lineNumber - 1);
-        this.oldtip = parent as Node;
+        this.oldtip = parent as Node<T>;
       }
       this.allClosed = true;
     }
@@ -869,7 +871,7 @@ export class BlockParser {
    */
   incorporateLine(ln: string) {
     let all_matched = true;
-    let t;
+    let t: T;
 
     let container = this.doc;
     this.oldtip = this.tip;
@@ -889,7 +891,7 @@ export class BlockParser {
     // For each containing block, try to parse the associated line start.
     // Bail out on failure: container will point to the last matching block.
     // Set all_matched to false if not all containers match.
-    let lastChild: Node | undefined;
+    let lastChild: Node<T> | undefined;
     while ((lastChild = container._lastChild) && lastChild._open) {
       container = lastChild;
 
@@ -907,7 +909,7 @@ export class BlockParser {
         throw 'continue returned illegal value, must be 0, 1, or 2';
       }
       if (!all_matched) {
-        container = container._parent as Node; // back up to last matching block
+        container = container._parent as Node<T>; // back up to last matching block
         break;
       }
     }
@@ -992,7 +994,7 @@ export class BlockParser {
       let cont = container;
       while (cont) {
         cont._lastLineBlank = lastLineBlank;
-        cont = cont._parent as Node;
+        cont = cont._parent as Node<T>;
       }
 
       if (this.blocks[t]?.acceptsLines) {
@@ -1012,7 +1014,7 @@ export class BlockParser {
         }
       } else if (this.offset < ln.length && !this.blank) {
         // create paragraph container for line
-        container = this.addChild('paragraph', this.offset);
+        container = this.addChild('paragraph' as T, this.offset);
         this.advanceNextNonspace();
         this.addLine();
       }
@@ -1029,14 +1031,14 @@ export class BlockParser {
    * @param block 
    * @param lineNumber 
    */
-  finalize(block: Node, lineNumber: number) {
+  finalize(block: Node<T>, lineNumber: number) {
     const above = block._parent;
     block._open = false;
     block.sourcepos[1] = [lineNumber, this.lastLineLength];
 
     this.blocks[block.type]?.finalize(this, block);
 
-    this.tip = above as Node;
+    this.tip = above as Node<T>;
   }
 
   /**
@@ -1044,7 +1046,7 @@ export class BlockParser {
    * into inline content where appropriate.
    * @param block 
    */
-  processInlines(block: Node) {
+  processInlines(block: Node<T>) {
     let node, event, t;
     const walker = new NodeWalker(block);
     this.inlineParser.refmap = this.refmap;

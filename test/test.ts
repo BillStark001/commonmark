@@ -1,8 +1,7 @@
 #!/usr/bin/env node
-/* eslint-disable @typescript-eslint/no-var-requires */
 
-const fs = require('fs');
-const commonmark = require('../dist/commonmark');
+import fs from 'fs';
+import * as commonmark from '../dist/commonmark';
 
 // Definitions
 
@@ -84,8 +83,8 @@ const cursor: Cursor = {
 };
 
 const writer = new commonmark.HtmlRenderer();
-const reader = new commonmark.Parser();
-const readerSmart = new commonmark.Parser({ smart: true });
+const reader = new commonmark.BlockParser();
+const readerSmart = new commonmark.BlockParser({ smart: true });
 
 const results: Result = {
   passed: 0,

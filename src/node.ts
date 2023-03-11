@@ -1,8 +1,9 @@
-export type NodeType =
+export type GeneralNodeType = 
   'text' | 'softbreak' | 'linebreak' | 'emph' | 'strong' | 'html_inline' | 
   'link' | 'image' | 'code' | 'document' | 'paragraph' |
-  'block_quote' | 'item' | 'list' | 'heading' | 'code_block' | 'html_block' | 
-  'thematic_break' | 'custom_inline' | 'custom_block';
+  'block_quote' | 'item' | 'list' | 'heading' | 'code_block' | 'html_block' | 'thematic_break';
+
+export type NodeType = GeneralNodeType | (string | number | symbol);
 
 export type Position = [[number, number], [number, number]];
 
@@ -17,7 +18,7 @@ export interface ListData {
 }
 
 
-export const isContainer = (node: Node) => {
+export const generalIsContainer = <T extends NodeType>(node: Node<T>) => {
   switch (node.type) {
   case 'document':
   case 'block_quote':
@@ -29,23 +30,30 @@ export const isContainer = (node: Node) => {
   case 'strong':
   case 'link':
   case 'image':
-  case 'custom_inline':
-  case 'custom_block':
     return true;
   default:
     return false;
   }
 };
 
+export interface NodeTypeDefinition<T extends NodeType> {
+  isContainer?: (node: Node<T>) => boolean;
+}
 
-export class Node {
+export const GeneralNodeTypeDefinition: NodeTypeDefinition<GeneralNodeType> = Object.freeze({
+  isContainer: generalIsContainer
+});
 
-  _type: NodeType;
-  _parent?: Node;
-  _firstChild?: Node;
-  _lastChild?: Node;
-  _prev?: Node;
-  _next?: Node;
+
+export class Node<T extends NodeType> {
+
+  readonly _type: T;
+
+  _parent?: Node<T>;
+  _firstChild?: Node<T>;
+  _lastChild?: Node<T>;
+  _prev?: Node<T>;
+  _next?: Node<T>;
   _sourcepos: Position;
   _lastLineBlank: boolean;
   _lastLineChecked: boolean;
@@ -67,7 +75,7 @@ export class Node {
 
 
   removeCycle() {
-    const n: Node = Object.assign({}, this);
+    const n: Node<T> = Object.assign({}, this);
     delete n._parent;
     delete n._lastChild;
     delete n._prev;
@@ -78,7 +86,7 @@ export class Node {
     return n;
   }
   
-  constructor(nodeType: NodeType, sourcepos?: Position) {
+  constructor(nodeType: T, sourcepos?: Position) {
     this._type = nodeType;
     this._sourcepos = sourcepos ?? [[-1, -1], [-1, -1]];
     this._lastLineBlank = false;
@@ -88,11 +96,6 @@ export class Node {
     this._isFenced = false;
     this._fenceLength = 0;
   }
-
-  get isContainer() {
-    return isContainer(this);
-  }
-
 
   get type() {
     return this._type;
@@ -217,7 +220,7 @@ export class Node {
   }
 
 
-  appendChild(child: Node) {
+  appendChild(child: Node<T>) {
     child.unlink();
     child._parent = this;
     if (this._lastChild) {
@@ -230,7 +233,7 @@ export class Node {
     }
   }
 
-  prependChild(child: Node) {
+  prependChild(child: Node<T>) {
     child.unlink();
     child._parent = this;
     if (this._firstChild) {
@@ -259,7 +262,7 @@ export class Node {
     this._prev = undefined;
   }
 
-  insertAfter(sibling: Node) {
+  insertAfter(sibling: Node<T>) {
     sibling.unlink();
     sibling._next = this._next;
     if (sibling._next) {
@@ -273,7 +276,7 @@ export class Node {
     }
   }
 
-  insertBefore(sibling: Node) {
+  insertBefore(sibling: Node<T>) {
     sibling.unlink();
     sibling._prev = this._prev;
     if (sibling._prev) {

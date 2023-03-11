@@ -9,13 +9,11 @@
 // var renderer = new HtmlRenderer();
 // console.log(renderer.render(parser.parse('Hello *world*')));
 
-export { default as Node } from './node';
-export { NodeWalker } from './node-walker';
-export { default as Parser } from './parse/blocks';
+export { Node, NodeType, NodeTypeDefinition, GeneralNodeType, GeneralNodeTypeDefinition, generalIsContainer } from './node';
+export { NodeWalker, NodeWalkerEvent, walkThrough } from './node-walker';
+export { BlockParser, BlockHandler, BlockStartsHandler, BlockParserOptions } from './parse/blocks';
+export { InlineParser, InlineParserOptions } from './parse/inlines';
 
-export { default as Renderer } from './render/renderer';
-export { default as HtmlRenderer } from './render/html';
-export { default as XmlRenderer } from './render/xml';
-
-
-
+export { Renderer } from './render/renderer';
+export { HtmlRenderer, HtmlRenderingOptions } from './render/html';
+export { XmlRenderer, XmlRenderingOptions } from './render/xml';

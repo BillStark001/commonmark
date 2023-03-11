@@ -11,13 +11,13 @@ const UNQUOTEDVALUE = '[^"\'=<>`\\x00-\\x20]+';
 const SINGLEQUOTEDVALUE = '\'[^\']*\'';
 const DOUBLEQUOTEDVALUE = '"[^"]*"';
 const ATTRIBUTEVALUE =
-    '(?:' +
-    UNQUOTEDVALUE +
-    '|' +
-    SINGLEQUOTEDVALUE +
-    '|' +
-    DOUBLEQUOTEDVALUE +
-    ')';
+  '(?:' +
+  UNQUOTEDVALUE +
+  '|' +
+  SINGLEQUOTEDVALUE +
+  '|' +
+  DOUBLEQUOTEDVALUE +
+  ')';
 const ATTRIBUTEVALUESPEC = '(?:' + '\\s*=' + '\\s*' + ATTRIBUTEVALUE + ')';
 const ATTRIBUTE = '(?:' + '\\s+' + ATTRIBUTENAME + ATTRIBUTEVALUESPEC + '?)';
 const OPENTAG = '<' + TAGNAME + ATTRIBUTE + '*' + '\\s*/?>';
@@ -27,19 +27,19 @@ const PROCESSINGINSTRUCTION = '[<][?][\\s\\S]*?[?][>]';
 const DECLARATION = '<![A-Z]+' + '[^>]*>';
 const CDATA = '<!\\[CDATA\\[[\\s\\S]*?\\]\\]>';
 const HTMLTAG =
-    '(?:' +
-    OPENTAG +
-    '|' +
-    CLOSETAG +
-    '|' +
-    HTMLCOMMENT +
-    '|' +
-    PROCESSINGINSTRUCTION +
-    '|' +
-    DECLARATION +
-    '|' +
-    CDATA +
-    ')';
+  '(?:' +
+  OPENTAG +
+  '|' +
+  CLOSETAG +
+  '|' +
+  HTMLCOMMENT +
+  '|' +
+  PROCESSINGINSTRUCTION +
+  '|' +
+  DECLARATION +
+  '|' +
+  CDATA +
+  ')';
 const reHtmlTag = new RegExp('^' + HTMLTAG);
 
 const reBackslashOrAmp = /[\\&]/;
@@ -52,7 +52,7 @@ const XMLSPECIAL = '[&<>"]';
 
 const reXmlSpecial = new RegExp(XMLSPECIAL, 'g');
 
-const unescapeChar = function(s: string) {
+const unescapeChar = function (s: string) {
   if (s.charCodeAt(0) === C_BACKSLASH) {
     return s.charAt(1);
   } else {
@@ -61,7 +61,7 @@ const unescapeChar = function(s: string) {
 };
 
 // Replace entities and backslash escapes with literal characters.
-const unescapeString = function(s: string) {
+const unescapeString = function (s: string) {
   if (reBackslashOrAmp.test(s)) {
     return s.replace(reEntityOrEscapedChar, unescapeChar);
   } else {
@@ -69,7 +69,7 @@ const unescapeString = function(s: string) {
   }
 };
 
-const normalizeURI = function(uri: string) {
+const normalizeURI = function (uri: string) {
   try {
     return mdurl.encode(uri);
   } catch (err) {
@@ -77,7 +77,7 @@ const normalizeURI = function(uri: string) {
   }
 };
 
-const replaceUnsafeChar = function(s: string) {
+const replaceUnsafeChar = function (s: string) {
   switch (s) {
   case '&':
     return '&amp;';
@@ -92,7 +92,7 @@ const replaceUnsafeChar = function(s: string) {
   }
 };
 
-const escapeXml = function(s: string) {
+const escapeXml = function (s: string) {
   if (reXmlSpecial.test(s)) {
     return s.replace(reXmlSpecial, replaceUnsafeChar);
   } else {

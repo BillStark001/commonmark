@@ -1,5 +1,5 @@
 import { escapeXml } from '../common';
-import Node from '../node';
+import Node, { GeneralNodeType, GeneralNodeTypeDefinition, NodeType } from '../node';
 import Renderer from './renderer';
 import { XmlRenderingOptions } from './xml';
 
@@ -10,7 +10,7 @@ const potentiallyUnsafe = (url?: string) => {
   return url !== undefined && reUnsafeProtocol.test(url) && !reSafeDataProtocol.test(url);
 };
 
-export interface HtmlRenderingOptions extends XmlRenderingOptions {
+export interface HtmlRenderingOptions<T extends NodeType = GeneralNodeType> extends XmlRenderingOptions<T> {
   /**
    *  if true, raw HTML will not be passed through to HTML output (it will be replaced by comments), and potentially unsafe URLs in links and images
    *  (those beginning with javascript:, vbscript:, file:, and with a few exceptions data:) will be replaced with empty strings.
@@ -33,14 +33,16 @@ export interface HtmlRenderingOptions extends XmlRenderingOptions {
 }
 
 
-export default class HtmlRenderer extends Renderer {
-  readonly options: HtmlRenderingOptions;
+export class HtmlRenderer<T extends NodeType = GeneralNodeType> extends Renderer<T> {
+  readonly options: HtmlRenderingOptions<T>;
 
   disableTags: number;
 
-  constructor(options?: HtmlRenderingOptions) {
+  constructor(options?: HtmlRenderingOptions<T>) {
     super();
     this.options = Object.assign({ softbreak: '\n' }, options);
+    this.options.type = Object.assign({}, GeneralNodeTypeDefinition, this.options.type);
+    
 
     // set to "<br />" to make them hard breaks
     // set to " " if you want to ignore line wrapping in source
@@ -57,7 +59,7 @@ export default class HtmlRenderer extends Renderer {
     this.lit(this.esc(s));
   }
 
-  attrs(node: Node): [string, string][] {
+  attrs(node: Node<T>): [string, string][] {
     const att: [string, string][] = [];
     if (this.options.sourcepos) {
       const pos = node.sourcepos;
@@ -99,7 +101,7 @@ export default class HtmlRenderer extends Renderer {
 
   /* Node methods */
 
-  text(node: Node) {
+  text(node: Node<T>) {
     this.out(node.literal ?? '');
   }
 
@@ -112,7 +114,7 @@ export default class HtmlRenderer extends Renderer {
     this.cr();
   }
 
-  link(node: Node, entering: boolean) {
+  link(node: Node<T>, entering: boolean) {
     const attrs = this.attrs(node);
     if (entering) {
       if (!(this.options.safe && potentiallyUnsafe(node.destination))) {
@@ -127,7 +129,7 @@ export default class HtmlRenderer extends Renderer {
     }
   }
 
-  image(node: Node, entering: boolean) {
+  image(node: Node<T>, entering: boolean) {
     if (entering) {
       if (this.disableTags === 0) {
         if (this.options.safe && potentiallyUnsafe(node.destination)) {
@@ -148,15 +150,15 @@ export default class HtmlRenderer extends Renderer {
     }
   }
 
-  emph(node: Node, entering: boolean) {
+  emph(node: Node<T>, entering: boolean) {
     this.tag(entering ? 'em' : '/em');
   }
 
-  strong(node: Node, entering: boolean) {
+  strong(node: Node<T>, entering: boolean) {
     this.tag(entering ? 'strong' : '/strong');
   }
 
-  paragraph(node: Node, entering: boolean) {
+  paragraph(node: Node<T>, entering: boolean) {
     const grandparent = node.parent?.parent,
       attrs = this.attrs(node);
     if (grandparent?.type === 'list') {
@@ -173,7 +175,7 @@ export default class HtmlRenderer extends Renderer {
     }
   }
 
-  heading(node: Node, entering: boolean) {
+  heading(node: Node<T>, entering: boolean) {
     const tagname = 'h' + node.level,
       attrs = this.attrs(node);
     if (entering) {
@@ -185,13 +187,13 @@ export default class HtmlRenderer extends Renderer {
     }
   }
 
-  code(node: Node) {
+  code(node: Node<T>) {
     this.tag('code');
     this.out(node.literal ?? '');
     this.tag('/code');
   }
 
-  code_block(node: Node) {
+  code_block(node: Node<T>) {
     const info_words = node.info ? node.info.split(/\s+/) : [],
       attrs = this.attrs(node);
     if (info_words.length > 0 && info_words[0].length > 0) {
@@ -206,14 +208,14 @@ export default class HtmlRenderer extends Renderer {
     this.cr();
   }
 
-  thematic_break(node: Node) {
+  thematic_break(node: Node<T>) {
     const attrs = this.attrs(node);
     this.cr();
     this.tag('hr', attrs, true);
     this.cr();
   }
 
-  block_quote(node: Node, entering: boolean) {
+  block_quote(node: Node<T>, entering: boolean) {
     const attrs = this.attrs(node);
     if (entering) {
       this.cr();
@@ -226,7 +228,7 @@ export default class HtmlRenderer extends Renderer {
     }
   }
 
-  list(node: Node, entering: boolean) {
+  list(node: Node<T>, entering: boolean) {
     const tagname = node.listType === 'bullet' ? 'ul' : 'ol',
       attrs = this.attrs(node);
 
@@ -245,7 +247,7 @@ export default class HtmlRenderer extends Renderer {
     }
   }
 
-  item(node: Node, entering: boolean) {
+  item(node: Node<T>, entering: boolean) {
     const attrs = this.attrs(node);
     if (entering) {
       this.tag('li', attrs);
@@ -255,7 +257,7 @@ export default class HtmlRenderer extends Renderer {
     }
   }
 
-  html_inline(node: Node) {
+  html_inline(node: Node<T>) {
     if (this.options.safe) {
       this.lit('<!-- raw HTML omitted -->');
     } else {
@@ -263,7 +265,7 @@ export default class HtmlRenderer extends Renderer {
     }
   }
 
-  html_block(node: Node) {
+  html_block(node: Node<T>) {
     this.cr();
     if (this.options.safe) {
       this.lit('<!-- raw HTML omitted -->');
@@ -273,7 +275,7 @@ export default class HtmlRenderer extends Renderer {
     this.cr();
   }
 
-  custom_inline(node: Node, entering: boolean) {
+  custom_inline(node: Node<T>, entering: boolean) {
     if (entering && node.onEnter) {
       this.lit(node.onEnter);
     } else if (!entering && node.onExit) {
@@ -281,7 +283,7 @@ export default class HtmlRenderer extends Renderer {
     }
   }
 
-  custom_block(node: Node, entering: boolean) {
+  custom_block(node: Node<T>, entering: boolean) {
     this.cr();
     if (entering && node.onEnter) {
       this.lit(node.onEnter);
@@ -293,3 +295,4 @@ export default class HtmlRenderer extends Renderer {
 
 }
 
+export default HtmlRenderer;

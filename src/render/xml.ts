@@ -1,30 +1,34 @@
 import Renderer from './renderer';
 import { escapeXml } from '../common';
-import Node from '../node';
+import Node, { GeneralNodeType, GeneralNodeTypeDefinition, NodeType, NodeTypeDefinition } from '../node';
 import { NodeWalker } from '../node-walker';
 
 const reXMLTag = /\<[^>]*\>/;
 
-const toTagName = (s: string) => {
-  return s.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
+const toTagName = <T extends NodeType>(s: T): string => {
+  if (typeof s === 'string')
+    return s.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase();
+  return toTagName(String(s) as T);
 };
 
-export interface XmlRenderingOptions {
+export interface XmlRenderingOptions<T extends NodeType = GeneralNodeType> {
   time?: boolean | undefined;
   sourcepos?: boolean | undefined;
 
   esc?: (x: string) => string;
+
+  type: NodeTypeDefinition<T>;
 }
 
 
-export default class XmlRenderer extends Renderer {
-  readonly options: XmlRenderingOptions;
+export class XmlRenderer<T extends NodeType = GeneralNodeType> extends Renderer<T> {
+  readonly options: XmlRenderingOptions<T>;
 
   disableTags: number;
   indentLevel: number;
   indent: string;
 
-  constructor(options?: XmlRenderingOptions) {
+  constructor(options?: XmlRenderingOptions<T>) {
     super();
     this.disableTags = 0;
     this.lastOut = '\n';
@@ -35,11 +39,12 @@ export default class XmlRenderer extends Renderer {
     // else use escapeXml
 
     this.options = Object.assign({}, options);
+    this.options.type = Object.assign({}, GeneralNodeTypeDefinition, this.options.type);
 
     this.esc = this.options.esc || escapeXml;
   }
 
-  render(ast: Node) {
+  render(ast: Node<T>) {
     this.buffer = '';
 
     let attrs: [string, string][];
@@ -64,7 +69,8 @@ export default class XmlRenderer extends Renderer {
       node = event.node;
       nodetype = node.type;
 
-      container = node.isContainer;
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      container = this.options.type.isContainer!(node);
 
       selfClosing =
       nodetype === 'thematic_break' ||
@@ -117,11 +123,6 @@ export default class XmlRenderer extends Renderer {
         case 'image':
           attrs.push(['destination', node.destination ?? '']);
           attrs.push(['title', node.title ?? '']);
-          break;
-        case 'custom_inline':
-        case 'custom_block':
-          attrs.push(['on_enter', node.onEnter ?? '']);
-          attrs.push(['on_exit', node.onExit ?? '']);
           break;
         default:
           break;
@@ -203,3 +204,6 @@ export default class XmlRenderer extends Renderer {
     return result;
   }
 }
+
+
+export default XmlRenderer;

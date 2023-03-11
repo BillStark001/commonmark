@@ -1,4 +1,4 @@
-import { isContainer, Node, NodeType } from './node';
+import { generalIsContainer, Node, NodeType } from './node';
 
 /* Example of use of walker:
 
@@ -11,33 +11,33 @@ import { isContainer, Node, NodeType } from './node';
 
  */
 
-export type NodeWalkerEvent = {
+export type NodeWalkerEvent<T extends NodeType> = {
   entering: boolean;
-  node: Node;
+  node: Node<T>;
 };
 
-export class NodeWalker {
+export class NodeWalker<T extends NodeType> {
 
-  private _current?: Node;
-  private _root: Node;
+  private _current?: Node<T>;
+  private _root: Node<T>;
   private _entering: boolean;
 
   public get current() { return this._current; }
   public get root() { return this._root; }
   public get entering() { return this._entering; }
 
-  constructor(root: Node) {
+  constructor(root: Node<T>) {
     this._current = root;
     this._root = root;
     this._entering = true;
   }
 
-  resumeAt(node: Node, entering: boolean) {
+  resumeAt(node: Node<T>, entering: boolean) {
     this._current = node;
     this._entering = entering;
   }
 
-  next(): NodeWalkerEvent | undefined {
+  next(): NodeWalkerEvent<T> | undefined {
     const cur = this.current;
     const entering = this.entering;
 
@@ -45,7 +45,7 @@ export class NodeWalker {
       return undefined;
     }
 
-    const container = isContainer(cur);
+    const container = generalIsContainer(cur);
 
     if (entering && container) {
       if (cur.firstChild) {
@@ -69,9 +69,9 @@ export class NodeWalker {
   }
 }
 
-export const walkThrough = (node: Node, callbacks: Record<NodeType, (node: Node, entering: boolean) => void>) => {
+export const walkThrough = <T extends NodeType>(node: Node<T>, callbacks: Record<NodeType, (node: Node<T>, entering: boolean) => void>) => {
   const walker = new NodeWalker(node);
-  let e: NodeWalkerEvent | undefined = undefined;
+  let e: NodeWalkerEvent<T> | undefined = undefined;
   while ((e = walker.next())) {
     const { node, entering } = e;
     const cb = callbacks[node.type];

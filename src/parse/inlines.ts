@@ -1,4 +1,4 @@
-import Node from '../node';
+import Node, { GeneralNodeType, NodeType } from '../node';
 import * as common from '../common';
 import fromCodePoint from '../from-code-point';
 import { decodeHTML } from 'entities';
@@ -96,21 +96,21 @@ export interface InlineParserOptions {
   smart?: boolean
 }
 
-export interface Delimiters {
+export interface Delimiters<T extends NodeType> {
   cc: number;
   numdelims: number;
   origdelims: number;
-  node: Node;
-  previous?: Delimiters;
-  next?: Delimiters;
+  node: Node<T>;
+  previous?: Delimiters<T>;
+  next?: Delimiters<T>;
   can_open: boolean;
   can_close: boolean;
 }
 
-export interface Brackets {
-  node: Node;
-  previous?: Brackets;
-  previousDelimiter?: Delimiters;
+export interface Brackets<T extends NodeType> {
+  node: Node<T>;
+  previous?: Brackets<T>;
+  previousDelimiter?: Delimiters<T>;
   bracketAfter?: boolean;
   index: number;
   image: boolean;
@@ -124,8 +124,8 @@ export type RefMap = Record<string, {
 
 
 
-const text = (s: string) => {
-  const node = new Node('text');
+const text = <T extends NodeType>(s: string) => {
+  const node = new Node<GeneralNodeType>('text') as Node<T>;
   node._literal = s;
   return node;
 };
@@ -143,7 +143,7 @@ const normalizeReference = (str: string) => {
 };
 
 
-const removeDelimitersBetween = (bottom: Delimiters, top: Delimiters) => {
+const removeDelimitersBetween = <T extends NodeType>(bottom: Delimiters<T>, top: Delimiters<T>) => {
   if (bottom.next !== top) {
     bottom.next = top;
     top.previous = bottom;
@@ -154,12 +154,12 @@ const removeDelimitersBetween = (bottom: Delimiters, top: Delimiters) => {
 /**
  * An InlineParser keeps track of a subject (a string to be parsed) and a position in that subject.
  */
-export class InlineParser {
+export class InlineParser<T extends NodeType> {
 
   options: InlineParserOptions;
   subject: string;
-  delimiters?: Delimiters;
-  brackets?: Brackets;
+  delimiters?: Delimiters<T>;
+  brackets?: Brackets<T>;
   pos: number;
   refmap: RefMap;
 
@@ -211,7 +211,7 @@ export class InlineParser {
 
   // Attempt to parse backticks, adding either a backtick code span or a
   // literal sequence of backticks.
-  parseBackticks(block: Node) {
+  parseBackticks(block: Node<T>) {
     const ticks = this.match(reTicksHere);
     if (ticks === undefined) {
       return false;
@@ -222,7 +222,7 @@ export class InlineParser {
     let contents;
     while ((matched = this.match(reTicks)) !== undefined) {
       if (matched === ticks) {
-        node = new Node('code');
+        node = new Node('code' as T);
         contents = this.subject
           .slice(afterOpenTicks, this.pos - ticks.length)
           .replace(/\n/gm, ' ');
@@ -249,13 +249,13 @@ export class InlineParser {
   // character, a hard line break (if the backslash is followed by a newline),
   // or a literal backslash to the block's children.  Assumes current character
   // is a backslash.
-  parseBackslash(block: Node) {
+  parseBackslash(block: Node<T>) {
     const subj = this.subject;
     let node;
     this.pos += 1;
     if (this.peek() === C_NEWLINE) {
       this.pos += 1;
-      node = new Node('linebreak');
+      node = new Node('linebreak' as T);
       block.appendChild(node);
     } else if (reEscapable.test(subj.charAt(this.pos))) {
       block.appendChild(text(subj.charAt(this.pos)));
@@ -267,13 +267,13 @@ export class InlineParser {
   }
 
   // Attempt to parse an autolink (URL or email in pointy brackets).
-  parseAutolink(block: Node) {
+  parseAutolink(block: Node<T>) {
     let m;
     let dest;
     let node;
     if ((m = this.match(reEmailAutolink))) {
       dest = m.slice(1, m.length - 1);
-      node = new Node('link');
+      node = new Node('link' as T);
       node._destination = normalizeURI('mailto:' + dest);
       node._title = '';
       node.appendChild(text(dest));
@@ -281,7 +281,7 @@ export class InlineParser {
       return true;
     } else if ((m = this.match(reAutolink))) {
       dest = m.slice(1, m.length - 1);
-      node = new Node('link');
+      node = new Node('link' as T);
       node._destination = normalizeURI(dest);
       node._title = '';
       node.appendChild(text(dest));
@@ -297,12 +297,12 @@ export class InlineParser {
    * @param block 
    * @returns 
    */
-  parseHtmlTag(block: Node) {
+  parseHtmlTag(block: Node<T>) {
     const m = this.match(reHtmlTag);
     if (m === undefined) {
       return false;
     } else {
-      const node = new Node('html_inline');
+      const node = new Node('html_inline' as T);
       node._literal = m;
       block.appendChild(node);
       return true;
@@ -376,7 +376,7 @@ export class InlineParser {
    * @param block 
    * @returns 
    */
-  handleDelim(cc: number, block: Node) {
+  handleDelim(cc: number, block: Node<T>) {
     const res = this.scanDelims(cc);
     if (!res) {
       return false;
@@ -393,7 +393,7 @@ export class InlineParser {
     } else {
       contents = this.subject.slice(startpos, this.pos);
     }
-    const node = text(contents);
+    const node = text<T>(contents);
     block.appendChild(node);
 
     // Add entry to stack for this opener
@@ -419,7 +419,7 @@ export class InlineParser {
     return true;
   }
 
-  removeDelimiter(delim: Delimiters) {
+  removeDelimiter(delim: Delimiters<T>) {
     if (delim.previous !== undefined) {
       delim.previous.next = delim.next;
     }
@@ -431,7 +431,7 @@ export class InlineParser {
     }
   }
 
-  processEmphasis(stack_bottom?: Delimiters) {
+  processEmphasis(stack_bottom?: Delimiters<T>) {
     let opener, closer, old_closer;
     let opener_inl, closer_inl;
     let tempstack;
@@ -497,7 +497,7 @@ export class InlineParser {
           if (!opener_found) {
             closer = closer.next;
           } else {
-            opener = opener as Delimiters;
+            opener = opener as Delimiters<T>;
             // calculate actual number of delimiters used from closer
             use_delims = closer.numdelims >= 2 && opener.numdelims >= 2 ? 2 : 1;
 
@@ -517,7 +517,7 @@ export class InlineParser {
             );
 
             // build contents for new emph element
-            const emph = new Node(use_delims === 1 ? 'emph' : 'strong');
+            const emph = new Node(use_delims === 1 ? 'emph' : 'strong') as Node<T>;
 
             tmp = opener_inl._next;
             while (tmp && tmp !== closer_inl) {
@@ -653,11 +653,11 @@ export class InlineParser {
   }
 
   // Add open bracket to delimiter stack and add a text node to block's children.
-  parseOpenBracket(block: Node) {
+  parseOpenBracket(block: Node<T>) {
     const startpos = this.pos;
     this.pos += 1;
 
-    const node = text('[');
+    const node = text<T>('[');
     block.appendChild(node);
 
     // Add entry to stack for this opener
@@ -667,13 +667,13 @@ export class InlineParser {
 
   // IF next character is [, and ! delimiter to delimiter stack and
   // add a text node to block's children.  Otherwise just add a text node.
-  parseBang(block: Node) {
+  parseBang(block: Node<T>) {
     const startpos = this.pos;
     this.pos += 1;
     if (this.peek() === C_OPEN_BRACKET) {
       this.pos += 1;
 
-      const node = text('![');
+      const node = text<T>('![');
       block.appendChild(node);
 
       // Add entry to stack for this opener
@@ -692,7 +692,7 @@ export class InlineParser {
    * @param block 
    * @returns 
    */
-  parseCloseBracket(block: Node) {
+  parseCloseBracket(block: Node<T>) {
     let dest;
     let title;
     let matched = false;
@@ -775,13 +775,13 @@ export class InlineParser {
     }
 
     if (matched) {
-      const node = new Node(is_image ? 'image' : 'link');
+      const node = new Node(is_image ? 'image' : 'link') as Node<T>;
       node._destination = dest;
       node._title = title || '';
 
-      let tmp, next;
+      let tmp: Node<T> | undefined, next: Node<T> | undefined;
       tmp = opener.node._next;
-      while (tmp) {
+      while (tmp !== undefined) {
         next = tmp._next;
         tmp.unlink();
         node.appendChild(tmp);
@@ -817,7 +817,7 @@ export class InlineParser {
     }
   }
 
-  addBracket(node: Node, index: number, image: boolean) {
+  addBracket(node: Node<T>, index: number, image: boolean) {
     if (this.brackets !== undefined) {
       this.brackets.bracketAfter = true;
     }
@@ -840,7 +840,7 @@ export class InlineParser {
    * @param block 
    * @returns 
    */
-  parseEntity(block: Node) {
+  parseEntity(block: Node<T>) {
     let m;
     if ((m = this.match(reEntityHere))) {
       block.appendChild(text(decodeHTML(m)));
@@ -856,7 +856,7 @@ export class InlineParser {
    * @param block 
    * @returns 
    */
-  parseString(block: Node) {
+  parseString(block: Node<T>) {
     let m;
     if ((m = this.match(reMain))) {
       if (this.options.smart) {
@@ -906,7 +906,7 @@ export class InlineParser {
    * @param block 
    * @returns 
    */
-  parseNewline(block: Node) {
+  parseNewline(block: Node<T>) {
     this.pos += 1; // assume we're at a \n
     // check previous node for trailing spaces
     const lastc = block._lastChild;
@@ -918,9 +918,9 @@ export class InlineParser {
     ) {
       const hardbreak = lastc._literal[lastc._literal.length - 2] === ' ';
       lastc._literal = lastc._literal.replace(reFinalSpace, '');
-      block.appendChild(new Node(hardbreak ? 'linebreak' : 'softbreak'));
+      block.appendChild(new Node(hardbreak ? 'linebreak' : 'softbreak') as Node<T>);
     } else {
-      block.appendChild(new Node('softbreak'));
+      block.appendChild(new Node('softbreak' as T));
     }
     this.match(reInitialSpace); // gobble leading spaces in next line
     return true;
@@ -1018,7 +1018,7 @@ export class InlineParser {
    * 
    * On failure, return false.
    */
-  parseInline(block: Node) {
+  parseInline(block: Node<T>) {
     let res = false;
     const c = this.peek();
     if (c === -1) {
@@ -1074,7 +1074,7 @@ export class InlineParser {
    * using refmap to resolve references.
    * @param block 
    */
-  parse(block: Node) {
+  parse(block: Node<T>) {
     this.subject = block._string_content?.trim() ?? '';
     this.pos = 0;
     this.delimiters = undefined;

@@ -2,7 +2,7 @@ import Node, { NodeType } from '../node';
 import { NodeWalker, NodeWalkerEvent } from '../node-walker';
 
 
-export default class Renderer {
+export class Renderer<T extends NodeType> {
   buffer: string;
   lastOut: string;
 
@@ -17,18 +17,19 @@ export default class Renderer {
  *
  *  @param ast {Node} The root of the abstract syntax tree.
  */
-  render(ast: Node) {
+  render(ast: Node<T>) {
     const walker = new NodeWalker(ast);
-    let event: NodeWalkerEvent | undefined;
+    let event: NodeWalkerEvent<T> | undefined;
 
     this.buffer = '';
     this.lastOut = '\n';
 
     while ((event = walker.next())) {
       const type = event.node.type;
-      const renderer = (this as unknown as Record<NodeType, (node: Node, entering: boolean) => void>)[type];
+      const thisVar = this as unknown as Record<T, (node: Node<T>, entering: boolean) => void>;
+      const renderer = thisVar[type] as ((node: Node<T>, entering: boolean) => void) | undefined;
       if (renderer !== undefined) {
-        renderer.bind(this)(event.node, event.entering);
+        renderer.bind(thisVar)(event.node, event.entering);
       }
     }
     return this.buffer;
@@ -77,3 +78,4 @@ export default class Renderer {
   }
 }
 
+export default Renderer;

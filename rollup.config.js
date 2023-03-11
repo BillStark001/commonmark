@@ -1,40 +1,63 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 // rollup.config.js
-import nodeResolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import json from '@rollup/plugin-json';
-import { uglify } from 'rollup-plugin-uglify';
-import typescript from 'rollup-plugin-typescript';
-import sourceMaps from 'rollup-plugin-sourcemaps';
+const commonjs = require('@rollup/plugin-commonjs');
+const resolve = require('@rollup/plugin-node-resolve');
+const terser = require('@rollup/plugin-terser');
+const dts = require('rollup-plugin-dts').default;
+const del = require('rollup-plugin-delete');
+const { version } = require('./package.json');
 
-import { version } from './package.json';
+// import { version } from './package.json';
 
 var banner =
     '/* commonmark ' +
     version +
     ' https://github.com/commonmark/commonmark.js @license BSD3 */';
 
-export default {
-  input: './src/index.ts',
-  output: [
-    {
+console.log(terser, dts, del);
+
+exports.default = [
+  {
+    input: 'dist/src/index.js',
+    output: {
       file: 'dist/commonmark.js',
       format: 'cjs',
       name: 'commonmark',
       banner: banner,
+      sourcemap: true,
     },
-    {
+    plugins: [
+      resolve(),
+      commonjs(),
+    ],
+  },
+  {
+    input: 'dist/src/index.js',
+    output: {
       file: 'dist/commonmark.min.js',
       format: 'iife',
       name: 'commonmark',
       banner: banner,
-      plugins: [uglify()],
+      sourcemap: true,
     },
-  ],
-  plugins: [
-    nodeResolve(),
-    commonjs(),
-    json(),
-    typescript({ tsconfig: './tsconfig.json' }),
-    sourceMaps(),
-  ],
-};
+    plugins: [
+      resolve(),
+      commonjs(),
+      terser(),
+    ],
+  },
+  {
+    input: 'dist/src/index.d.ts',
+    output: {
+      file: 'dist/commonmark.d.ts',
+      format: 'es',
+    },
+    plugins: [
+      dts(),
+      del({
+        targets: ['dist/*/'],
+        hook: 'buildEnd',
+      })
+    ],
+  },
+];
