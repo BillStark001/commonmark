@@ -28,8 +28,10 @@ export class NodeWalker<T extends NodeType> {
   public get root() { return this._root; }
   public get entering() { return this._entering; }
 
-  constructor(root: Node<T>, definition?: NodeTypeDefinition<T>) {
-    this.definition = Object.assign({}, GeneralNodeTypeDefinition, definition);
+  constructor(root: Node<T>, definition?: NodeTypeDefinition<T>, doNotShallowCopy?: boolean) {
+    this.definition = doNotShallowCopy ? 
+      (definition ?? GeneralNodeTypeDefinition as NodeTypeDefinition<T>) :
+      Object.assign({}, GeneralNodeTypeDefinition, definition);
 
     this._current = root;
     this._root = root;
@@ -49,8 +51,7 @@ export class NodeWalker<T extends NodeType> {
       return undefined;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const container = this.definition.isContainer!(cur);
+    const container = this.definition.isContainer(cur);
 
     if (entering && container) {
       if (cur.firstChild) {
@@ -74,7 +75,7 @@ export class NodeWalker<T extends NodeType> {
   }
 }
 
-export const walkThrough = <T extends NodeType>(node: Node<T>, callbacks: Record<NodeType, (node: Node<T>, entering: boolean) => void>) => {
+export const walkThrough = <T extends NodeType>(node: Node<T>, callbacks: Record<T, (node: Node<T>, entering: boolean) => void>) => {
   const walker = new NodeWalker(node);
   let e: NodeWalkerEvent<T> | undefined = undefined;
   while ((e = walker.next())) {

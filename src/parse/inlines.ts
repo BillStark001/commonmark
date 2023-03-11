@@ -1,4 +1,4 @@
-import Node, { GeneralNodeType, NodeType } from '../node';
+import Node, { GeneralNodeType, NodeType, NodeTypeDefinition } from '../node';
 import * as common from '../common';
 import fromCodePoint from '../from-code-point';
 import { decodeHTML } from 'entities';
@@ -131,7 +131,9 @@ export const compileNonSpecialCharRegExp = (chars: string, raw?: boolean) => {
 export type InlineHandler<T extends NodeType> = (parser: InlineParser<T>, block: Node<T>) => boolean;
 
 
-export interface InlineParserOptions<T extends NodeType> {
+export interface InlineParsingOptions<T extends NodeType> {
+  type?: NodeTypeDefinition<T>;
+
   smart?: boolean;
 
   reNonSpecialChars?: RegExp;
@@ -205,7 +207,7 @@ const removeDelimitersBetween = <T extends NodeType>(bottom: Delimiters<T>, top:
  */
 export class InlineParser<T extends NodeType> {
 
-  readonly options: InlineParserOptions<T>;
+  readonly options: InlineParsingOptions<T>;
   readonly withDefinedRules: boolean;
 
   subject: string;
@@ -214,9 +216,9 @@ export class InlineParser<T extends NodeType> {
   pos: number;
   refmap: RefMap;
 
-  constructor(options?: InlineParserOptions<T>) {
+  constructor(options?: InlineParsingOptions<T>, doNotShallowCopy?: boolean) {
     // parse options
-    this.options = Object.assign({}, options);
+    this.options = doNotShallowCopy ? (options ?? {}) : Object.assign({}, options);
 
     this.options.reDelimiterPunctuation = this.options.reDelimiterPunctuation ?? rePunctuation;
     this.options.reDelimiterWhiteSpace = this.options.reDelimiterWhiteSpace ?? reUnicodeWhitespaceChar;

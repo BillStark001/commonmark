@@ -14,8 +14,8 @@
 
 export { Node, NodeType, NodeTypeDefinition, GeneralNodeType, GeneralNodeTypeDefinition, generalIsContainer } from './node';
 export { NodeWalker, NodeWalkerEvent, walkThrough } from './node-walker';
-export { BlockParser, BlockHandler, BlockStartsHandler, BlockParserOptions } from './parse/blocks';
-export { InlineParser, InlineParserOptions } from './parse/inlines';
+export { BlockParser, BlockHandler, BlockStartsHandler, BlockParsingOptions } from './parse/blocks';
+export { InlineParser, InlineHandler, InlineParsingOptions } from './parse/inlines';
 
 export { Renderer } from './render/renderer';
 export { HtmlRenderer, HtmlRenderingOptions } from './render/html';

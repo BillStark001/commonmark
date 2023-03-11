@@ -1,5 +1,5 @@
 import { escapeXml } from '../common';
-import Node, { GeneralNodeType, GeneralNodeTypeDefinition, NodeType } from '../node';
+import Node, { GeneralNodeType, NodeType } from '../node';
 import Renderer from './renderer';
 import { XmlRenderingOptions } from './xml';
 
@@ -38,11 +38,11 @@ export class HtmlRenderer<T extends NodeType = GeneralNodeType> extends Renderer
 
   disableTags: number;
 
-  constructor(options?: HtmlRenderingOptions<T>) {
-    super();
-    this.options = Object.assign({ softbreak: '\n' }, options);
-    this.options.type = Object.assign({}, GeneralNodeTypeDefinition, this.options.type);
-    
+  constructor(options?: HtmlRenderingOptions<T>, doNotShallowCopy?: boolean) {
+    super(options?.type, doNotShallowCopy);
+    this.options = doNotShallowCopy ? (options ?? {}) : Object.assign({}, options);
+    this.options.softbreak = this.options.softbreak ?? '\n';
+
 
     // set to "<br />" to make them hard breaks
     // set to " " if you want to ignore line wrapping in source
@@ -275,23 +275,6 @@ export class HtmlRenderer<T extends NodeType = GeneralNodeType> extends Renderer
     this.cr();
   }
 
-  custom_inline(node: Node<T>, entering: boolean) {
-    if (entering && node.onEnter) {
-      this.lit(node.onEnter);
-    } else if (!entering && node.onExit) {
-      this.lit(node.onExit);
-    }
-  }
-
-  custom_block(node: Node<T>, entering: boolean) {
-    this.cr();
-    if (entering && node.onEnter) {
-      this.lit(node.onEnter);
-    } else if (!entering && node.onExit) {
-      this.lit(node.onExit);
-    }
-    this.cr();
-  }
 
 }
 

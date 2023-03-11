@@ -1,6 +1,6 @@
 import Node, { GeneralNodeType, ListData, NodeType } from '../node.js';
 import { unescapeString, OPENTAG, CLOSETAG } from '../common.js';
-import InlineParser, { InlineParserOptions, RefMap } from './inlines.js';
+import InlineParser, { InlineParsingOptions as InlineParsingOptions, RefMap } from './inlines.js';
 import { NodeWalker } from '../node-walker.js';
 
 const CODE_INDENT = 4;
@@ -665,18 +665,53 @@ const listsMatch = (list_data: ListData, item_data: ListData) => {
 };
 
 
-export interface BlockParserOptions<T extends NodeType = GeneralNodeType> extends InlineParserOptions<T> {
+export interface BlockParsingOptions<T extends NodeType = GeneralNodeType> extends InlineParsingOptions<T> {
   time?: boolean;
   blockHandlers?: Record<T, BlockHandler<T> | undefined>;
   /**
    * The less the index, the higher the hierarchy.
    */
-  blockStartHandlers?: BlockStartsHandler<T>[];
+  blockStartHandlers?: Record<number, BlockStartsHandler<T>[]>;
 }
+
+const defaultBlockStartsIndex = Object.assign({}, defaultBlockStarts.map(() => []));
+
+export const HIERARCHY_HIGHEST_DEFAULT = 0;
+export const HIERARCHY_BLOCK_QUOTE = 0;
+export const HIERARCHY_ATX_HEADING = 1;
+export const HIERARCHY_FENCED_CODE_BLOCK = 2;
+export const HIERARCHY_HTML_BLOCK = 3;
+export const HIERARCHY_SETEXT_HEADING = 4;
+export const HIERARCHY_THEMATIC_BREAK = 5;
+export const HIERARCHY_LIST_ITEM = 6;
+export const HIERARCHY_INDENTED_CODE_BLOCK = 7;
+export const HIERARCHY_LOWEST_DEFAULT = 8;
+
+/**
+ * 
+ * @param handlers \{ \[hierarchy]: handler[] }
+ * 
+ * The handlers' hierarchy will be slightly larger than the default ones.
+ * Smaller hierarchy means more prioritized.
+ * @returns 
+ */
+export const extendBlockStartsHandlers = <T extends NodeType>(handlers: Record<number, BlockStartsHandler<T>[]>) => {
+  const res: BlockStartsHandler<T>[] = [];
+  const newHandlers = Object.assign({}, defaultBlockStartsIndex, handlers);
+  const hierarchyList = Object.keys(handlers)
+    .sort((x, y) => Number(x) - Number(y));
+  for (const h of hierarchyList) {
+    res.push(...newHandlers[h as unknown as number]);
+    const d = defaultBlockStarts[h as unknown as number];
+    if (d !== undefined)
+      res.push(d as unknown as BlockStartsHandler<T>);
+  }
+  return res;
+};
 
 export class BlockParser<T extends NodeType = GeneralNodeType> {
 
-  readonly options: BlockParserOptions<T>;
+  readonly options: BlockParsingOptions<T>;
   readonly inlineParser: InlineParser<T>;
   readonly blocks: Record<T, BlockHandler<T> | undefined>;
   readonly blockStarts: BlockStartsHandler<T>[];
@@ -700,12 +735,18 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
   column: number;
   lastMatchedContainer: Node<T>;
 
-  constructor(options?: BlockParserOptions<T>) {
+  constructor(options?: BlockParsingOptions<T>, doNotShallowCopy?: boolean) {
 
-    this.options = Object.assign({}, options);
-    this.blocks = this.options.blockHandlers ?? (Object.assign({}, defaultBlocks) as Record<T, BlockHandler<T> | undefined>);
-    this.blockStarts = this.options.blockStartHandlers ?? ([...defaultBlockStarts as unknown as BlockStartsHandler<T>[]]);
-    this.inlineParser = new InlineParser(options);
+    this.options = doNotShallowCopy ? (options ?? {}) : Object.assign({}, options);
+    this.blocks = Object.assign(
+      {}, 
+      defaultBlocks, 
+      this.options.blockHandlers
+    ) as Record<T, BlockHandler<T> | undefined>;
+    this.blockStarts = this.options.blockStartHandlers === undefined ?
+      defaultBlockStarts as unknown as BlockStartsHandler<T>[] : 
+      extendBlockStartsHandlers(this.options.blockStartHandlers);
+    this.inlineParser = new InlineParser(this.options, true);
 
     this.doc = newDocument();
 
@@ -733,6 +774,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
   reset() {
     this.doc = newDocument();
     this.tip = this.doc;
+    this.oldtip = this.doc;
     this.refmap = {};
     this.lineNumber = 0;
     this.lastLineLength = 0;
@@ -919,8 +961,6 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
 
     let matchedLeaf =
       container.type !== 'paragraph' && this.blocks[container.type]?.acceptsLines;
-    const starts = this.blockStarts;
-    const startsLen = starts.length;
     // Unless last matched container is a code block, try new container starts,
     // adding children to the last matched container:
     while (!matchedLeaf) {
@@ -935,23 +975,22 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
         break;
       }
 
-      let i = 0;
-      while (i < startsLen) {
-        const res = starts[i](this, container);
+      let matched = false;
+      for (const start of this.blockStarts) {
+        const res = start(this, container);
         if (res === 1) {
           container = this.tip;
+          matched = true;
           break;
         } else if (res === 2) {
           container = this.tip;
           matchedLeaf = true;
+          matched = true;
           break;
-        } else {
-          i++;
-        }
+        } 
       }
 
-      if (i === startsLen) {
-        // nothing matched
+      if (!matched) {
         this.advanceNextNonspace();
         break;
       }
@@ -1048,7 +1087,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
    */
   processInlines(block: Node<T>) {
     let node, event, t;
-    const walker = new NodeWalker(block);
+    const walker = new NodeWalker(block, this.options.type, true);
     this.inlineParser.refmap = this.refmap;
     while ((event = walker.next())) {
       node = event.node;

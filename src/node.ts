@@ -37,7 +37,7 @@ export const generalIsContainer = <T extends NodeType>(node: Node<T>) => {
 };
 
 export interface NodeTypeDefinition<T extends NodeType> {
-  isContainer?: (node: Node<T>) => boolean;
+  isContainer: (node: Node<T>) => boolean;
 }
 
 export const GeneralNodeTypeDefinition: NodeTypeDefinition<GeneralNodeType> = Object.freeze({
@@ -54,6 +54,7 @@ export class Node<T extends NodeType> {
   _lastChild?: Node<T>;
   _prev?: Node<T>;
   _next?: Node<T>;
+
   _sourcepos: Position;
   _lastLineBlank: boolean;
   _lastLineChecked: boolean;
@@ -70,8 +71,8 @@ export class Node<T extends NodeType> {
   _fenceOffset?: number;
   _level?: number;
   _htmlBlockType?: number;
-  _onEnter?: string;
-  _onExit?: string;
+
+  _customData?: unknown;
 
 
   removeCycle() {
@@ -204,19 +205,11 @@ export class Node<T extends NodeType> {
   }
 
 
-  get onEnter() {
-    return this._onEnter;
+  get customData() {
+    return this._customData;
   }
-  set onEnter(s) {
-    this._onEnter = s;
-  }
-
-
-  get onExit() {
-    return this._onExit;
-  }
-  set onExit(s) {
-    this._onExit = s;
+  set customData(s) {
+    this._customData = s;
   }
 
 

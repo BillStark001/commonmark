@@ -1,15 +1,20 @@
-import Node, { NodeType } from '../node';
+import Node, { GeneralNodeTypeDefinition, NodeType, NodeTypeDefinition } from '../node';
 import { NodeWalker, NodeWalkerEvent } from '../node-walker';
 
 
 export class Renderer<T extends NodeType> {
+
+  readonly definition: NodeTypeDefinition<T>;
+
   buffer: string;
   lastOut: string;
 
-  constructor() {
+  constructor(definition?: NodeTypeDefinition<T>, doNotShallowCopy?: boolean) {
+    definition = definition ?? (GeneralNodeTypeDefinition as NodeTypeDefinition<T>);
+    this.definition = doNotShallowCopy ? definition : Object.assign({}, definition);
+
     this.buffer = '';
     this.lastOut = '';
-    
   }
 
   /**
@@ -18,7 +23,7 @@ export class Renderer<T extends NodeType> {
  *  @param ast {Node} The root of the abstract syntax tree.
  */
   render(ast: Node<T>) {
-    const walker = new NodeWalker(ast);
+    const walker = new NodeWalker(ast, this.definition, true);
     let event: NodeWalkerEvent<T> | undefined;
 
     this.buffer = '';

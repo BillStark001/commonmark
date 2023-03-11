@@ -1,6 +1,6 @@
 import Renderer from './renderer';
 import { escapeXml } from '../common';
-import Node, { GeneralNodeType, GeneralNodeTypeDefinition, NodeType, NodeTypeDefinition } from '../node';
+import Node, { GeneralNodeType, NodeType, NodeTypeDefinition } from '../node';
 import { NodeWalker } from '../node-walker';
 
 const reXMLTag = /\<[^>]*\>/;
@@ -17,7 +17,7 @@ export interface XmlRenderingOptions<T extends NodeType = GeneralNodeType> {
 
   esc?: (x: string) => string;
 
-  type: NodeTypeDefinition<T>;
+  type?: NodeTypeDefinition<T>;
 }
 
 
@@ -28,8 +28,8 @@ export class XmlRenderer<T extends NodeType = GeneralNodeType> extends Renderer<
   indentLevel: number;
   indent: string;
 
-  constructor(options?: XmlRenderingOptions<T>) {
-    super();
+  constructor(options?: XmlRenderingOptions<T>, doNotShallowCopy?: boolean) {
+    super(options?.type, doNotShallowCopy);
     this.disableTags = 0;
     this.lastOut = '\n';
 
@@ -38,8 +38,7 @@ export class XmlRenderer<T extends NodeType = GeneralNodeType> extends Renderer<
     // escape html with a custom function
     // else use escapeXml
 
-    this.options = Object.assign({}, options);
-    this.options.type = Object.assign({}, GeneralNodeTypeDefinition, this.options.type);
+    this.options = doNotShallowCopy ? (options ?? {}) : Object.assign({}, options);
 
     this.esc = this.options.esc || escapeXml;
   }
@@ -49,7 +48,7 @@ export class XmlRenderer<T extends NodeType = GeneralNodeType> extends Renderer<
 
     let attrs: [string, string][];
     let tagname;
-    const walker = new NodeWalker(ast, this.options.type);
+    const walker = new NodeWalker(ast, this.definition, true);
     let event, node, entering;
     let container;
     let selfClosing;
@@ -69,8 +68,7 @@ export class XmlRenderer<T extends NodeType = GeneralNodeType> extends Renderer<
       node = event.node;
       nodetype = node.type;
 
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      container = this.options.type.isContainer!(node);
+      container = this.definition.isContainer(node);
 
       selfClosing =
       nodetype === 'thematic_break' ||
