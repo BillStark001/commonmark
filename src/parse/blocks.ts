@@ -1,4 +1,4 @@
-import Node, { GeneralNodeType, ListData, NodeType } from '../node.js';
+import Node, { generalIsCodeBlockCategory, generalNeedsInlineParse, GeneralNodeType, ListData, NodeType } from '../node.js';
 import { unescapeString, OPENTAG, CLOSETAG, escapeForRegExp } from '../common.js';
 import InlineParser, { InlineParsingOptions as InlineParsingOptions, RefMap } from './inlines.js';
 import { NodeWalker } from '../node-walker.js';
@@ -1046,7 +1046,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
       case 2: // we've hit end of line for fenced code close and can return
         return;
       default:
-        throw 'continue returned illegal value, must be 0, 1, or 2';
+        throw `BlockHandler.continue() of node type ${String(container.type)} returned illegal value, must be 0, 1, or 2`;
       }
       if (!all_matched) {
         container = container._parent as Node<T>; // back up to last matching block
@@ -1116,11 +1116,12 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
       // and we don't count blanks in fenced code for purposes of tight/loose
       // lists or breaking out of lists.  We also don't set _lastLineBlank
       // on an empty list item, or if we just closed a fenced block.
+      const isCodeBlock = this.options.type?.isCodeBlockCategory ?? generalIsCodeBlockCategory;
       const lastLineBlank =
         this.blank &&
         !(
           t === 'block_quote' ||
-          (t === 'code_block' && container._isFenced) ||
+          (isCodeBlock(t) && container._isFenced) ||
           (t === 'item' &&
             !container._firstChild &&
             container.sourcepos !== undefined &&
@@ -1174,7 +1175,6 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
     block.sourcepos[1] = [lineNumber, this.lastLineLength];
 
     this.blocks[block.type]?.finalize(this, block);
-
     this.tip = above as Node<T>;
   }
 
@@ -1187,10 +1187,11 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
     let node, event, t;
     const walker = new NodeWalker(block, this.options.type, true);
     this.inlineParser.refmap = this.refmap;
+    const needsInline = this.options.type?.needsInlineParse ?? generalNeedsInlineParse;
     while ((event = walker.next())) {
       node = event.node;
       t = node.type;
-      if (!event.entering && (t === 'paragraph' || t === 'heading')) {
+      if (!event.entering && needsInline(t as T)) {
         this.inlineParser.parse(node);
       }
     }

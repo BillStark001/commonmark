@@ -36,12 +36,19 @@ export const generalIsContainer = <T extends NodeType>(node: Node<T>) => {
   }
 };
 
+export const generalIsCodeBlockCategory = <T extends NodeType>(t: T) => t === 'code_block';
+export const generalNeedsInlineParse = <T extends NodeType>(t: T) => t === 'paragraph' || t === 'heading';
+
 export interface NodeTypeDefinition<T extends NodeType> {
   isContainer: (node: Node<T>) => boolean;
+  isCodeBlockCategory: (t: T) => boolean;
+  needsInlineParse: (t: T) => boolean;
 }
 
 export const GeneralNodeTypeDefinition: NodeTypeDefinition<GeneralNodeType> = Object.freeze({
-  isContainer: generalIsContainer
+  isContainer: generalIsContainer, 
+  isCodeBlockCategory: generalIsCodeBlockCategory, 
+  needsInlineParse: generalNeedsInlineParse,
 });
 
 

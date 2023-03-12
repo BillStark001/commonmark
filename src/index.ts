@@ -18,7 +18,9 @@ export {
   NodeTypeDefinition, 
   GeneralNodeType, 
   GeneralNodeTypeDefinition, 
-  generalIsContainer
+  generalIsContainer,
+  generalIsCodeBlockCategory, 
+  generalNeedsInlineParse,
 } from './node';
 
 export {
