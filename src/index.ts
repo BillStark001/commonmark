@@ -34,14 +34,18 @@ export {
   BlockHandler, 
   BlockStartsHandler, 
   BlockParsingOptions, 
-  compileMaybeSpecialRegExp
+  compileMaybeSpecialRegExp,
+  
 } from './parse/blocks';
 
 export {
   InlineParser, 
   InlineHandler, 
   InlineParsingOptions, 
-  compileNonSpecialCharRegExp
+  compileNonSpecialCharRegExp,
+  createTextnode,
+  normalizeReference,
+  removeDelimitersBetween,
 } from './parse/inlines';
 
 export {

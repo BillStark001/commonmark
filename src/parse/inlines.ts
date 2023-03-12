@@ -168,7 +168,7 @@ export type RefMap = Record<string, {
 
 
 
-const createTextnode = <T extends NodeType>(literal: string) => {
+export const createTextnode = <T extends NodeType>(literal: string) => {
   const node = new Node<GeneralNodeType>('text') as Node<T>;
   node._literal = literal;
   return node;
@@ -181,7 +181,7 @@ const createTextnode = <T extends NodeType>(literal: string) => {
  * @param str 
  * @returns 
  */
-const normalizeReference = (str: string) => {
+export const normalizeReference = (str: string) => {
   return str
     .slice(1, str.length - 1)
     .trim()
@@ -191,7 +191,7 @@ const normalizeReference = (str: string) => {
 };
 
 
-const removeDelimitersBetween = <T extends NodeType>(bottom: Delimiters<T>, top: Delimiters<T>) => {
+export const removeDelimitersBetween = <T extends NodeType>(bottom: Delimiters<T>, top: Delimiters<T>) => {
   if (bottom.next !== top) {
     bottom.next = top;
     top.previous = bottom;
@@ -427,10 +427,10 @@ export class InlineParser<T extends NodeType> {
       '\n' :
       fromCodePoint(cc_after);
 
-    const after_is_whitespace = reUnicodeWhitespaceChar.test(char_after);
-    const after_is_punctuation = rePunctuation.test(char_after);
-    const before_is_whitespace = reUnicodeWhitespaceChar.test(char_before);
-    const before_is_punctuation = rePunctuation.test(char_before);
+    const after_is_whitespace = this.options.reDelimiterWhiteSpace?.test(char_after) ?? false;
+    const after_is_punctuation = this.options.reDelimiterPunctuation?.test(char_after) ?? false;
+    const before_is_whitespace = this.options.reDelimiterWhiteSpace?.test(char_before) ?? false;
+    const before_is_punctuation = this.options.reDelimiterPunctuation?.test(char_before) ?? false;
 
     const left_flanking =
       !after_is_whitespace &&
@@ -946,7 +946,7 @@ export class InlineParser<T extends NodeType> {
    */
   parseString(block: Node<T>) {
     let m;
-    if ((m = this.match(reMain))) {
+    if ((m = this.match(this.options.reNonSpecialChars ?? reMain))) {
       if (this.options.smart) {
         block.appendChild(
           createTextnode(
