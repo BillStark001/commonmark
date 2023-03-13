@@ -153,11 +153,9 @@ const specTest = function (testcase: Example, res: Result, converter: Converter)
   }
 };
 
-const specTests = function (testfile: string, res: Result, converter: Converter) {
-  cursor.write('Spec tests [' + testfile + ']:\n');
+const specTests = function (examples: Example[], res: Result, converter: Converter) {
 
   let current_section = '';
-  const examples = extractSpecTests(testfile);
 
   console.time('Elapsed time');
   for (let i = 0; i < examples.length; i++) {
@@ -350,13 +348,20 @@ for (x = 10; x <= 1000; x *= 10) {
     });
 }
 
+const spec = extractSpecTests('test/spec.txt');
+const punct = extractSpecTests('test/smart_punct.txt');
+const regression = extractSpecTests('test/regression.txt');
+
 console.time('Total elapsed time');
 
-specTests('test/spec.txt', results, parseAndRender);
+cursor.write('Spec tests [' + 'test/spec.txt' + ']:\n');
+specTests(spec, results, parseAndRender);
 
-specTests('test/smart_punct.txt', results, parseAndRenderSmart);
+cursor.write('Spec tests [' + 'test/smart_punct.txt' + ']:\n');
+specTests(punct, results, parseAndRenderSmart);
 
-specTests('test/regression.txt', results, parseAndRender);
+cursor.write('Spec tests [' + 'test/regression.txt' + ']:\n');
+specTests(regression, results, parseAndRender);
 
 // Pathological cases
 cursor.write('Pathological cases:\n');

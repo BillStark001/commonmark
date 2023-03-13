@@ -1,5 +1,5 @@
 import Node, { generalIsCodeBlockCategory, generalNeedsInlineParse, GeneralNodeType, ListData, NodeType } from '../node.js';
-import { unescapeString, OPENTAG, CLOSETAG, escapeForRegExp } from '../common.js';
+import { unescapeString, HTML_OPEN_TAG, HTML_CLOSE_TAG, escapeForRegExp } from '../common.js';
 import InlineParser, { InlineParsingOptions as InlineParsingOptions, RefMap } from './inlines.js';
 import { NodeWalker } from '../node-walker.js';
 
@@ -22,7 +22,7 @@ const reHtmlBlockOpen = [
   /^<![A-Za-z]/,
   /^<!\[CDATA\[/,
   /^<[/]?(?:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[123456]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|section|source|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?:\s|[/]?[>]|$)/i,
-  new RegExp('^(?:' + OPENTAG + '|' + CLOSETAG + ')\\s*$', 'i')
+  new RegExp('^(?:' + HTML_OPEN_TAG + '|' + HTML_CLOSE_TAG + ')\\s*$', 'i')
 ];
 
 const reHtmlBlockClose = [
@@ -112,7 +112,7 @@ const endsWithBlankLine = <T extends NodeType>(block?: Node<T>) => {
     const t = block.type;
     if (!block._lastLineChecked && (t === 'list' || t === 'item')) {
       block._lastLineChecked = true;
-      block = block._lastChild;
+      block = block.lastChild;
     } else {
       block._lastLineChecked = true;
       break;
@@ -445,25 +445,25 @@ const defaultBlocks: Record<GeneralNodeType, BlockHandler<GeneralNodeType> | und
       return 0;
     },
     finalize: function (parser, block) {
-      let item = block._firstChild;
+      let item = block.firstChild;
       while (item) {
         // check for non-final list item ending with blank line:
-        if (endsWithBlankLine(item) && item._next) {
+        if (endsWithBlankLine(item) && item.next) {
           block._listData.tight = false;
           break;
         }
         // recurse into children of list item, to see if there are
         // spaces between any of them:
-        let subitem = item._firstChild;
+        let subitem = item.firstChild;
         while (subitem) {
           if (endsWithBlankLine(subitem) &&
-            (item._next || subitem._next)) {
+            (item.next || subitem.next)) {
             block._listData.tight = false;
             break;
           }
-          subitem = subitem._next;
+          subitem = subitem.next;
         }
-        item = item._next;
+        item = item.next;
       }
     },
     canContain: function (t) {
@@ -497,7 +497,7 @@ const defaultBlocks: Record<GeneralNodeType, BlockHandler<GeneralNodeType> | und
   item: {
     continue: function (parser, container) {
       if (parser.blank) {
-        if (container._firstChild === undefined) {
+        if (container.firstChild === undefined) {
           // Blank line after empty list item
           return 1;
         } else {
@@ -931,7 +931,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
     if (!this.allClosed) {
       // finalize any blocks not matched
       while (this.oldtip !== this.lastMatchedContainer) {
-        const parent = this.oldtip._parent;
+        const parent = this.oldtip.parent;
         this.finalize(this.oldtip, this.lineNumber - 1);
         this.oldtip = parent as Node<T>;
       }
@@ -1032,7 +1032,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
     // Bail out on failure: container will point to the last matching block.
     // Set all_matched to false if not all containers match.
     let lastChild: Node<T> | undefined;
-    while ((lastChild = container._lastChild) && lastChild._open) {
+    while ((lastChild = container.lastChild) && lastChild._open) {
       container = lastChild;
 
       this.findNextNonspace();
@@ -1049,7 +1049,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
         throw `BlockHandler.continue() of node type ${String(container.type)} returned illegal value, must be 0, 1, or 2`;
       }
       if (!all_matched) {
-        container = container._parent as Node<T>; // back up to last matching block
+        container = container.parent as Node<T>; // back up to last matching block
         break;
       }
     }
@@ -1123,7 +1123,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
           t === 'block_quote' ||
           (isCodeBlock(t) && container._isFenced) ||
           (t === 'item' &&
-            !container._firstChild &&
+            !container.firstChild &&
             container.sourcepos !== undefined &&
             container.sourcepos[0][0] === this.lineNumber)
         );
@@ -1132,7 +1132,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
       let cont = container;
       while (cont) {
         cont._lastLineBlank = lastLineBlank;
-        cont = cont._parent as Node<T>;
+        cont = cont.parent as Node<T>;
       }
 
       if (this.blocks[t]?.acceptsLines) {
@@ -1170,7 +1170,7 @@ export class BlockParser<T extends NodeType = GeneralNodeType> {
    * @param lineNumber 
    */
   finalize(block: Node<T>, lineNumber: number) {
-    const above = block._parent;
+    const above = block.parent;
     block._open = false;
     block.sourcepos[1] = [lineNumber, this.lastLineLength];
 

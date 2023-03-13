@@ -54,15 +54,15 @@ export const GeneralNodeTypeDefinition: NodeTypeDefinition<GeneralNodeType> = Ob
 
 export class Node<T extends NodeType> {
 
-  readonly _type: T;
+  private readonly _type: T;
 
-  _parent?: Node<T>;
-  _firstChild?: Node<T>;
-  _lastChild?: Node<T>;
-  _prev?: Node<T>;
-  _next?: Node<T>;
+  private _parent?: Node<T>;
+  private _firstChild?: Node<T>;
+  private _lastChild?: Node<T>;
+  private _prev?: Node<T>;
+  private _next?: Node<T>;
 
-  _sourcepos: Position;
+  private readonly _sourcepos: Position;
   _lastLineBlank: boolean;
   _lastLineChecked: boolean;
   _open: boolean;
@@ -113,18 +113,12 @@ export class Node<T extends NodeType> {
   get firstChild() {
     return this._firstChild;
   }
-
-
   get lastChild() {
     return this._lastChild;
   }
-
-
   get next() {
     return this._next;
   }
-
-
   get prev() {
     return this._prev;
   }
@@ -287,6 +281,63 @@ export class Node<T extends NodeType> {
     sibling._parent = this._parent;
     if (sibling._parent && !sibling._prev) {
       sibling._parent._firstChild = sibling;
+    }
+  }
+
+  /**
+   * Order of start and end is not checked, so a ring is not guaranteed
+   * to be prevented!
+   * @param start included
+   * @param end included
+   */
+  static unlinkNodes<T extends NodeType>(start?: Node<T>, end?: Node<T>) {
+    // same node
+    if (start === end) {
+      if (start?.parent !== undefined)
+        start.unlink();
+      return;
+    }
+    // top-level
+    if (start !== undefined && end === undefined && start.parent === undefined) {
+      if (start.prev !== undefined)
+        start.prev._next = undefined;
+      start._prev = undefined;
+      return;
+    }
+    if (end !== undefined && start === undefined && end.parent === undefined) {
+      if (end.next !== undefined)
+        end.next._prev = undefined;
+      end._next = undefined;
+      return;
+    }
+    if (start !== undefined && end !== undefined && start.parent === undefined && end.parent === undefined) {
+      const sn = start.next;
+      const ep = end.prev;
+      start._next = end.next;
+      end._prev = start.prev;
+      if (sn !== undefined)
+        sn._prev = undefined;
+      if (ep !== undefined)
+        ep._next = undefined;
+      return;
+    }
+    // with parent
+    if (start === undefined) {
+      start = end?.parent?.firstChild;
+    }
+    if (end === undefined) {
+      end = start?.parent?.lastChild;
+    }
+    if (start === undefined || end === undefined)
+      throw 'this should never happen...';
+    if (start.parent !== end.parent)
+      throw 'start and end node must have the same parent!';
+    let current: Node<T> | undefined = start;
+    const endNext = end.next;
+    while (current !== undefined && current !== endNext) {
+      const next: Node<T> | undefined = current?.next;
+      current.unlink();
+      current = next;
     }
   }
 

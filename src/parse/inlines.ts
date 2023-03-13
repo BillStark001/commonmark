@@ -226,13 +226,13 @@ export class InlineParser<T extends NodeType> {
         throw 'Invalid triggering character(s): ' + JSON.stringify(c);
 
     this.withDefinedRules = this.options.inlineHandlers.length !== 0;
-    
+
     if (this.options.reNonSpecialChars === undefined) {
       if (!this.withDefinedRules)
         this.options.reNonSpecialChars = reMain;
       else {
         this.options.reNonSpecialChars = compileNonSpecialCharRegExp(
-          this.options.inlineHandlers.map(x => x[0]).join(''), 
+          this.options.inlineHandlers.map(x => x[0]).join(''),
           true
         );
       }
@@ -603,9 +603,9 @@ export class InlineParser<T extends NodeType> {
             // build contents for new emph element
             const emph = new Node(use_delims === 1 ? 'emph' : 'strong') as Node<T>;
 
-            tmp = opener_inl._next;
+            tmp = opener_inl.next;
             while (tmp && tmp !== closer_inl) {
-              next = tmp._next;
+              next = tmp.next;
               tmp.unlink();
               emph.appendChild(tmp);
               tmp = next;
@@ -868,9 +868,9 @@ export class InlineParser<T extends NodeType> {
       node._title = title || '';
 
       let tmp: Node<T> | undefined, next: Node<T> | undefined;
-      tmp = opener.node._next;
+      tmp = opener.node.next;
       while (tmp !== undefined) {
-        next = tmp._next;
+        next = tmp.next;
         tmp.unlink();
         node.appendChild(tmp);
         tmp = next;
@@ -997,7 +997,7 @@ export class InlineParser<T extends NodeType> {
   parseNewline(block: Node<T>) {
     this.pos += 1; // assume we're at a \n
     // check previous node for trailing spaces
-    const lastc = block._lastChild;
+    const lastc = block.lastChild;
     if (
       lastc &&
       lastc.type === 'text' &&
@@ -1108,6 +1108,7 @@ export class InlineParser<T extends NodeType> {
    */
   parseInline(block: Node<T>) {
     let res = false;
+    let defaultHandled = true;
     const c = this.peek();
     if (c === -1) {
       return false;
@@ -1146,8 +1147,12 @@ export class InlineParser<T extends NodeType> {
       res = this.parseEntity(block);
       break;
     default:
+      defaultHandled = false;
+      break;
+    }
+    if (!defaultHandled) {
+      let handled = false;
       if (this.withDefinedRules) {
-        let handled = false;
         for (const [ch, handler] of this.options.inlineHandlers ?? []) {
           if (c === ch.charCodeAt(0)) {
             res = handler(this, block);
@@ -1155,11 +1160,10 @@ export class InlineParser<T extends NodeType> {
             break;
           }
         }
-        if (!handled)
-          res = this.parseString(block);
-      } else
+      }
+      if (!handled) {
         res = this.parseString(block);
-      break;
+      }
     }
     if (!res) {
       this.pos += 1;

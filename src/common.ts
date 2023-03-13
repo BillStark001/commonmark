@@ -3,66 +3,77 @@ import mdurl from 'mdurl';
 
 const C_BACKSLASH = 92;
 
-const ENTITY = '&(?:#x[a-f0-9]{1,6}|#[0-9]{1,7}|[a-z][a-z0-9]{1,31});';
+export const ENTITY = '&(?:#x[a-f0-9]{1,6}|#[0-9]{1,7}|[a-z][a-z0-9]{1,31});';
 
-const TAGNAME = '[A-Za-z][A-Za-z0-9-]*';
-const ATTRIBUTENAME = '[a-zA-Z_:][a-zA-Z0-9:._-]*';
-const UNQUOTEDVALUE = '[^"\'=<>`\\x00-\\x20]+';
-const SINGLEQUOTEDVALUE = '\'[^\']*\'';
-const DOUBLEQUOTEDVALUE = '"[^"]*"';
-const ATTRIBUTEVALUE =
+export const HTML_TAG_NAME = '[A-Za-z][A-Za-z0-9-]*';
+
+const ATTRIBUTE_NAME = '[a-zA-Z_:][a-zA-Z0-9:._-]*';
+const UNQUOTED_VALUE = '[^"\'=<>`\\x00-\\x20]+';
+const SINGLE_QUOTED_VALUE = '\'[^\']*\'';
+const DOUBLE_QUOTED_VALUE = '"[^"]*"';
+const ATTRIBUTE_VALUE =
   '(?:' +
-  UNQUOTEDVALUE +
+  UNQUOTED_VALUE +
   '|' +
-  SINGLEQUOTEDVALUE +
+  SINGLE_QUOTED_VALUE +
   '|' +
-  DOUBLEQUOTEDVALUE +
+  DOUBLE_QUOTED_VALUE +
   ')';
-const ATTRIBUTEVALUESPEC = '(?:' + '\\s*=' + '\\s*' + ATTRIBUTEVALUE + ')';
-const ATTRIBUTE = '(?:' + '\\s+' + ATTRIBUTENAME + ATTRIBUTEVALUESPEC + '?)';
-const OPENTAG = '<' + TAGNAME + ATTRIBUTE + '*' + '\\s*/?>';
-const CLOSETAG = '</' + TAGNAME + '\\s*[>]';
-const HTMLCOMMENT = '<!-->|<!--->|<!--(?:[^-]+|-[^-]|--[^>])*-->';
-const PROCESSINGINSTRUCTION = '[<][?][\\s\\S]*?[?][>]';
-const DECLARATION = '<![A-Z]+' + '[^>]*>';
-const CDATA = '<!\\[CDATA\\[[\\s\\S]*?\\]\\]>';
-const HTMLTAG =
+
+const ATTRIBUTE_VALUE_SPEC = '(?:' + '\\s*=' + '\\s*' + ATTRIBUTE_VALUE + ')';
+const ATTRIBUTE = '(?:' + '\\s+' + ATTRIBUTE_NAME + ATTRIBUTE_VALUE_SPEC + '?)';
+
+
+export const HTML_OPEN_TAG = '<' + HTML_TAG_NAME + ATTRIBUTE + '*' + '\\s*/?>';
+export const HTML_CLOSE_TAG = '</' + HTML_TAG_NAME + '\\s*[>]';
+export const HTML_COMMENT = '<!-->|<!--->|<!--(?:[^-]+|-[^-]|--[^>])*-->';
+export const HTML_PROCESSING_INSTRUCTION = '[<][?][\\s\\S]*?[?][>]';
+export const HTML_DECLARATION = '<![A-Z]+' + '[^>]*>';
+export const HTML_CDATA = '<!\\[CDATA\\[[\\s\\S]*?\\]\\]>';
+
+export const HTML_TAG =
   '(?:' +
-  OPENTAG +
+  HTML_OPEN_TAG +
   '|' +
-  CLOSETAG +
+  HTML_CLOSE_TAG +
   '|' +
-  HTMLCOMMENT +
+  HTML_COMMENT +
   '|' +
-  PROCESSINGINSTRUCTION +
+  HTML_PROCESSING_INSTRUCTION +
   '|' +
-  DECLARATION +
+  HTML_DECLARATION +
   '|' +
-  CDATA +
+  HTML_CDATA +
   ')';
-const reHtmlTag = new RegExp('^' + HTMLTAG);
+
+
+export const reHtmlOpenTag = new RegExp(HTML_OPEN_TAG);
+export const reHtmlCloseTag = new RegExp(HTML_CLOSE_TAG);
+export const reHtmlComment = new RegExp(HTML_COMMENT);
+
+export const reHtmlTag = new RegExp('^' + HTML_TAG);
 
 const reBackslashOrAmp = /[\\&]/;
 
-const ESCAPABLE = '[!"#$%&\'()*+,./:;<=>?@[\\\\\\]^_`{|}~-]';
+export const ESCAPABLE = '[!"#$%&\'()*+,./:;<=>?@[\\\\\\]^_`{|}~-]';
 
 const reEntityOrEscapedChar = new RegExp('\\\\' + ESCAPABLE + '|' + ENTITY, 'gi');
 
-const XMLSPECIAL = '[&<>"]';
+const XML_SPECIAL = '[&<>"]';
 
-const reXmlSpecial = new RegExp(XMLSPECIAL, 'g');
+const reXmlSpecial = new RegExp(XML_SPECIAL, 'g');
 
 const REGEX_SPECIAL_CHARS = '.+*?^$()[]{}|\\';
 const REGEX_CHAR_ESCAPE = '\\';
 
-const escapeForRegExp = (chars: string) => {
+export const escapeForRegExp = (chars: string) => {
   let chars2 = '';
   for (const char of chars)
     chars2 += REGEX_SPECIAL_CHARS.indexOf(char) >= 0 ? (REGEX_CHAR_ESCAPE + char) : char;
   return chars2;
 };
 
-const unescapeChar = function (s: string) {
+export const unescapeChar = function (s: string) {
   if (s.charCodeAt(0) === C_BACKSLASH) {
     return s.charAt(1);
   } else {
@@ -71,7 +82,7 @@ const unescapeChar = function (s: string) {
 };
 
 // Replace entities and backslash escapes with literal characters.
-const unescapeString = function (s: string) {
+export const unescapeString = function (s: string) {
   if (reBackslashOrAmp.test(s)) {
     return s.replace(reEntityOrEscapedChar, unescapeChar);
   } else {
@@ -79,7 +90,7 @@ const unescapeString = function (s: string) {
   }
 };
 
-const normalizeURI = function (uri: string) {
+export const normalizeURI = function (uri: string) {
   try {
     return mdurl.encode(uri);
   } catch (err) {
@@ -87,7 +98,7 @@ const normalizeURI = function (uri: string) {
   }
 };
 
-const replaceUnsafeChar = function (s: string) {
+export const replaceUnsafeChar = function (s: string) {
   switch (s) {
   case '&':
     return '&amp;';
@@ -102,7 +113,7 @@ const replaceUnsafeChar = function (s: string) {
   }
 };
 
-const escapeXml = function (s: string) {
+export const escapeXml = function (s: string) {
   if (reXmlSpecial.test(s)) {
     return s.replace(reXmlSpecial, replaceUnsafeChar);
   } else {
@@ -110,14 +121,3 @@ const escapeXml = function (s: string) {
   }
 };
 
-export {
-  escapeForRegExp, 
-  unescapeString,
-  normalizeURI,
-  escapeXml,
-  reHtmlTag,
-  OPENTAG,
-  CLOSETAG,
-  ENTITY,
-  ESCAPABLE
-};
