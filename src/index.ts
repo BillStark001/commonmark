@@ -14,9 +14,9 @@
 
 export {
   Node, 
-  NodeType, 
-  NodeTypeDefinition, 
-  GeneralNodeType, 
+  type NodeType, 
+  type NodeTypeDefinition, 
+  type GeneralNodeType, 
   GeneralNodeTypeDefinition, 
   generalIsContainer,
   generalIsCodeBlockCategory, 
@@ -25,23 +25,23 @@ export {
 
 export {
   NodeWalker, 
-  NodeWalkerEvent, 
+  type NodeWalkerEvent, 
   walkThrough
 } from './node-walker';
 
 export {
   BlockParser, 
-  BlockHandler, 
-  BlockStartsHandler, 
-  BlockParsingOptions, 
+  type BlockHandler, 
+  type BlockStartsHandler, 
+  type BlockParsingOptions, 
   compileMaybeSpecialRegExp,
   
 } from './parse/blocks';
 
 export {
   InlineParser, 
-  InlineHandler, 
-  InlineParsingOptions, 
+  type InlineHandler, 
+  type InlineParsingOptions, 
   compileNonSpecialCharRegExp,
   createTextnode,
   normalizeReference,
@@ -66,5 +66,5 @@ export {
 export * as common from './common';
 
 export { Renderer } from './render/renderer';
-export { HtmlRenderer, HtmlRenderingOptions } from './render/html';
-export { XmlRenderer, XmlRenderingOptions } from './render/xml';
+export { HtmlRenderer, type HtmlRenderingOptions } from './render/html';
+export { XmlRenderer, type XmlRenderingOptions } from './render/xml';
